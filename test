@@ -1,0 +1,41 @@
+import requests
+import pandas as pd
+
+API_KEY = 'aa14874600855457b5a838ec894a06ae'
+API_URL_FIXTURES = 'https://v3.football.api-sports.io/fixtures'
+
+def get_recent_performance(api_key, team_id, num_matches=5):
+    response = requests.get(API_URL_FIXTURES, headers={'x-apisports-key': api_key}, params={'team': team_id, 'last': num_matches})
+    if response.status_code == 200:
+        matches = response.json().get('response', [])
+        return pd.json_normalize(matches)
+    return pd.DataFrame()
+
+def calculate_goals_performance(recent_performance):
+    home_performance = recent_performance[['teams.home.id', 'goals.home', 'goals.away']]
+    home_performance = home_performance.groupby('teams.home.id').sum().reset_index().rename(columns={'goals.home': 'home_goals_scored', 'goals.away': 'home_goals_conceded'})
+
+    away_performance = recent_performance[['teams.away.id', 'goals.away', 'goals.home']]
+    away_performance = away_performance.groupby('teams.away.id').sum().reset_index().rename(columns={'goals.away': 'away_goals_scored', 'goals.home': 'away_goals_conceded'})
+
+    return home_performance, away_performance
+
+def main():
+    team_id = int(input("Enter the team ID: "))  # Demande à l'utilisateur d'entrer l'ID de l'équipe
+    num_matches = int(input("Enter the number of recent matches to retrieve: "))  # Demande à l'utilisateur le nombre de matchs récents à récupérer
+
+    recent_performance = get_recent_performance(API_KEY, team_id, num_matches)
+    
+    if recent_performance.empty:
+        print("No recent performance data found.")
+        return
+
+    home_performance, away_performance = calculate_goals_performance(recent_performance)
+
+    print("Home Performance:")
+    print(home_performance)
+    print("\nAway Performance:")
+    print(away_performance)
+
+if __name__ == '__main__':
+    main()
