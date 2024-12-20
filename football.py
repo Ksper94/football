@@ -6,37 +6,59 @@ from datetime import date
 # ===================== AJOUT AUTHENTIFICATION ==========================
 NEXTJS_CHECK_SUB_URL = "https://my-football-zeta.vercel.app/api/check-subscription"
 
+# Récupération du token dans l'URL
+params = st.experimental_get_query_params()
+url_token = params.get('token', [None])[0]  # Récupère le token depuis l'URL s'il existe
+
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title("Authentification requise")
-    token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
-    if st.button("Se connecter"):
-        if token:
-            # On envoie le token à l'endpoint check-subscription
-            resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                # On vérifie si 'success' est True
-                if data.get('success', False):
-                    st.session_state.authenticated = True
-                    st.success("Authentification réussie !")
-                    # On force un rerun pour rafraîchir la page
-                    st.experimental_rerun()
-                else:
-                    st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+    if url_token:
+        # Si on a un token dans l'URL, on l'utilise directement
+        resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get('success', False):
+                st.session_state.authenticated = True
+                st.success("Authentification réussie !")
+                st.experimental_rerun()
             else:
-                try:
-                    error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
-                except:
-                    error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
-                st.error(error_message)
+                st.title("Authentification requise")
+                st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+                st.stop()
         else:
-            st.error("Veuillez saisir un token.")
-    # Si pas authentifié, on stoppe l'exécution du reste du code
-    st.stop()
+            try:
+                error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
+            except:
+                error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
+            st.title("Authentification requise")
+            st.error(error_message)
+            st.stop()
+    else:
+        # Pas de token dans l'URL, on conserve le comportement de saisie manuelle
+        st.title("Authentification requise")
+        token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
+        if st.button("Se connecter"):
+            if token:
+                resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get('success', False):
+                        st.session_state.authenticated = True
+                        st.success("Authentification réussie !")
+                        st.experimental_rerun()
+                    else:
+                        st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+                else:
+                    try:
+                        error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
+                    except:
+                        error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
+                    st.error(error_message)
+            else:
+                st.error("Veuillez saisir un token.")
+        st.stop()
 # ===================== FIN AJOUT AUTHENTIFICATION ======================
 
 # A partir d'ici, l'utilisateur est authentifié
