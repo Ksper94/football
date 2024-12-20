@@ -1,0 +1,211 @@
+﻿Diagnose log at 2024-12-20T17:41:34Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.6.0+3c28096588f549cb46f36b552390514356830abe
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 19045)
+Reading environment variables... OK
+ Variables:
+HOMEPATH=\Users\hugos
+DriverData=C:\Windows\System32\Drivers\DriverData
+COMPUTERNAME=LAPTOP-OBOLM9G5
+MSYSTEM=MINGW64
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+OneDrive=C:\Users\hugos\OneDrive
+ChocolateyLastPathUpdate=133783765098221473
+ProgramFiles(x86)=C:\Program Files (x86)
+CONFIG_SITE=C:/Program Files/Git/etc/config.site
+LC_CTYPE=fr_FR.UTF-8
+TERM_PROGRAM=mintty
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW
+ORIGINAL_TEMP=C:/Users/hugos/AppData/Local/Temp
+USERNAME=hugos
+MINGW_PREFIX=C:/Program Files/Git/mingw64
+GIT_EXEC_PATH=C:/Program Files/Git/mingw64/libexec/git-core
+ACLOCAL_PATH=C:\Program Files\Git\mingw64\share\aclocal;C:\Program Files\Git\usr\share\aclocal
+TEMP=C:\Users\hugos\AppData\Local\Temp
+LOCALAPPDATA=C:\Users\hugos\AppData\Local
+MANPATH=C:\Program Files\Git\mingw64\local\man;C:\Program Files\Git\mingw64\share\man;C:\Program Files\Git\usr\local\man;C:\Program Files\Git\usr\share\man;C:\Program Files\Git\usr\man;C:\Program Files\Git\share\man
+TERM=xterm
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 142 Stepping 9, GenuineIntel
+MSYSTEM_CARCH=x86_64
+PROGRAMFILES=C:\Program Files (x86)
+ProgramData=C:\ProgramData
+TERM_PROGRAM_VERSION=3.7.6
+ORIGINAL_TMP=C:/Users/hugos/AppData/Local/Temp
+PROCESSOR_REVISION=8e09
+SYSTEMROOT=C:\WINDOWS
+POWERSHELL_DISTRIBUTION_CHANNEL=MSI:Windows 10 Home
+PROCESSOR_LEVEL=6
+NUMBER_OF_PROCESSORS=4
+SSH_ASKPASS=C:/Program Files/Git/mingw64/bin/git-askpass.exe
+SHLVL=1
+APPDATA=C:\Users\hugos\AppData\Roaming
+SYSTEMDRIVE=C:
+PSModulePath=C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+PUBLIC=C:\Users\Public
+FPS_BROWSER_USER_PROFILE_STRING=Default
+PKG_CONFIG_PATH=C:\Program Files\Git\mingw64\lib\pkgconfig;C:\Program Files\Git\mingw64\share\pkgconfig
+USERDOMAIN_ROAMINGPROFILE=LAPTOP-OBOLM9G5
+MSYSTEM_CHOST=x86_64-w64-mingw32
+WINDIR=C:\WINDOWS
+PLINK_PROTOCOL=ssh
+INFOPATH=C:\Program Files\Git\mingw64\local\info;C:\Program Files\Git\mingw64\share\info;C:\Program Files\Git\usr\local\info;C:\Program Files\Git\usr\share\info;C:\Program Files\Git\usr\info;C:\Program Files\Git\share\info
+ProgramW6432=C:\Program Files
+PATH=C:/Program Files/Git/mingw64/libexec/git-core;C:\Users\hugos\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\hugos\bin;C:\Python312\Scripts;C:\Python312;C:\Program Files (x86)\Intel\iCLS Client;C:\Program Files\Intel\iCLS Client;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\IPT;C:\Program Files\Intel\Intel(R) Management Engine Components\IPT;C:\WINDOWS\System32\OpenSSH;C:\Program Files\nodejs;C:\ProgramData\chocolatey\bin;C:\Program Files\PowerShell\7-preview\preview;C:\Program Files\Git\cmd;C:\Users\hugos\AppData\Local\Programs\Python\Python313\Scripts;C:\Users\hugos\AppData\Local\Programs\Python\Python313;C:\Users\hugos\AppData\Local\Programs\Python\Launcher;C:\Users\hugos\AppData\Local\Microsoft\WindowsApps;C:\Users\hugos\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\hugos\AppData\Roaming\npm;C:\Program Files\heroku\bin;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl
+ChocolateyInstall=C:\ProgramData\chocolatey
+GIT_TRACE2_PARENT_SID=e08d2e2b-872c-4620-8eb9-7da3685e288b
+FPS_BROWSER_APP_PROFILE_STRING=Internet Explorer
+PKG_CONFIG_SYSTEM_LIBRARY_PATH=C:/Program Files/Git/mingw64/lib
+TMPDIR=C:\Users\hugos\AppData\Local\Temp
+TMP=C:\Users\hugos\AppData\Local\Temp
+SHELL=C:\Program Files\Git\usr\bin\bash.exe
+HOME=C:\Users\hugos
+COMSPEC=C:\WINDOWS\system32\cmd.exe
+LOGONSERVER=\\LAPTOP-OBOLM9G5
+USERPROFILE=C:\Users\hugos
+DISPLAY=needs-to-be-defined
+COMMONPROGRAMFILES=C:\Program Files (x86)\Common Files
+USERDOMAIN=LAPTOP-OBOLM9G5
+CommonProgramW6432=C:\Program Files\Common Files
+HOMEDRIVE=C:
+MSYSTEM_PREFIX=C:/Program Files/Git/mingw64
+OLDPWD=C:/Users/hugos
+MINGW_PACKAGE_PREFIX=mingw-w64-x86_64
+SESSIONNAME=Console
+PWD=C:/Users/hugos/documents
+EXEPATH=C:\Program Files\Git
+HOSTNAME=LAPTOP-OBOLM9G5
+PROCESSOR_ARCHITEW6432=AMD64
+ORIGINAL_PATH=C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\hugos\bin;C:\Python312\Scripts;C:\Python312;C:\Program Files (x86)\Intel\iCLS Client;C:\Program Files\Intel\iCLS Client;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\IPT;C:\Program Files\Intel\Intel(R) Management Engine Components\IPT;C:\WINDOWS\System32\OpenSSH;C:\Program Files\nodejs;C:\ProgramData\chocolatey\bin;C:\Program Files\PowerShell\7-preview\preview;C:\Program Files\Git\cmd;C:\Users\hugos\AppData\Local\Programs\Python\Python313\Scripts;C:\Users\hugos\AppData\Local\Programs\Python\Python313;C:\Users\hugos\AppData\Local\Programs\Python\Launcher;C:\Users\hugos\AppData\Local\Microsoft\WindowsApps;C:\Users\hugos\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\hugos\AppData\Roaming\npm;C:\Program Files\heroku\bin
+PROCESSOR_ARCHITECTURE=x86
+PS1=\[\033]0;$TITLEPREFIX:$PWD\007\]\n\[\033[32m\]\u@\h \[\033[35m\]$MSYSTEM \[\033[33m\]\w\[\033[36m\]`__git_ps1`\[\033[0m\]\n$ 
+OS=Windows_NT
+MINGW_CHOST=x86_64-w64-mingw32
+PKG_CONFIG_SYSTEM_INCLUDE_PATH=C:/Program Files/Git/mingw64/include
+_=C:/Program Files/Git/mingw64/bin/git
+ALLUSERSPROFILE=C:\ProgramData
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\hugos\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\hugos\AppData\Local\Temp\1e204383ada3c4a7ac1c8606'... OK
+Reading from temporary file 'C:\Users\hugos\AppData\Local\Temp\1e204383ada3c4a7ac1c8606'... OK
+Deleting temporary file 'C:\Users\hugos\AppData\Local\Temp\1e204383ada3c4a7ac1c8606'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\hugos
+UserDataDirectoryPath: C:\Users\hugos\.gcm
+GetCurrentDirectory(): C:\Users\hugos\documents
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+ OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:50490/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.47.1.windows.1'
+Locating current repository...Git repository at 'C:/Users/hugos/Documents/.git'
+ OK
+Listing all Git configuration... OK
+Git configuration:
+file:C:/Program Files/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.required=true
+file:C:/Program Files/Git/etc/gitconfig	http.sslbackend=openssl
+file:C:/Program Files/Git/etc/gitconfig	http.sslcainfo=C:/Program Files/Git/mingw64/etc/ssl/certs/ca-bundle.crt
+file:C:/Program Files/Git/etc/gitconfig	core.autocrlf=true
+file:C:/Program Files/Git/etc/gitconfig	core.fscache=true
+file:C:/Program Files/Git/etc/gitconfig	core.symlinks=false
+file:C:/Program Files/Git/etc/gitconfig	pull.rebase=false
+file:C:/Program Files/Git/etc/gitconfig	credential.helper=manager
+file:C:/Program Files/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:C:/Program Files/Git/etc/gitconfig	init.defaultbranch=master
+file:C:/Users/hugos/.gitconfig	user.name=ksper94
+file:C:/Users/hugos/.gitconfig	user.email=hugostephan94470@gmail.com
+file:C:/Users/hugos/.gitconfig	credential.https://git.heroku.com.provider=generic
+file:C:/Users/hugos/.gitconfig	core.autocrlf=true
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.symlinks=false
+file:.git/config	core.ignorecase=true
+file:.git/config	remote.origin.url=ssh://git@github.com:Ksper94/football.git
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+file:.git/config	branch.master.remote=origin
+file:.git/config	branch.master.merge=refs/heads/master
+file:.git/config	remote.heroku.url=https://git.heroku.com/football.git
+file:.git/config	remote.heroku.fetch=+refs/heads/*:refs/remotes/heroku/*
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+
+------------
+Diagnostic: Microsoft authentication (AAD/MSA)
+Skipped: False
+Success: True
+Exception: None
+Log:
+Broker is not enabled.
+Flow type is: Auto
+Gathering MSAL token cache data... OK
+CacheDirectory: C:\Users\hugos\AppData\Local\.IdentityService
+CacheFileName: msal.cache
+CacheFilePath: C:\Users\hugos\AppData\Local\.IdentityService\msal.cache
+Creating cache helper... OK
+Verifying MSAL token cache persistence... OK
+
+------------
+Diagnostic: GitHub API
+Skipped: False
+Success: True
+Exception: None
+Log:
+Using 'https://github.com/' as API target.
+Querying '/meta' endpoint... OK
+
