@@ -4,7 +4,6 @@ import datetime
 from datetime import date
 
 # ===================== AJOUT AUTHENTIFICATION ==========================
-# URL de l'endpoint check-subscription de votre site Next.js
 NEXTJS_CHECK_SUB_URL = "https://my-football-zeta.vercel.app/api/check-subscription"
 
 if 'authenticated' not in st.session_state:
@@ -20,9 +19,12 @@ if not st.session_state.authenticated:
             
             if resp.status_code == 200:
                 data = resp.json()
-                if data.get('valid', False):
+                # On vérifie si 'success' est True
+                if data.get('success', False):
                     st.session_state.authenticated = True
                     st.success("Authentification réussie !")
+                    # On force un rerun pour rafraîchir la page
+                    st.experimental_rerun()
                 else:
                     st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
             else:
@@ -35,10 +37,9 @@ if not st.session_state.authenticated:
             st.error("Veuillez saisir un token.")
     # Si pas authentifié, on stoppe l'exécution du reste du code
     st.stop()
-
 # ===================== FIN AJOUT AUTHENTIFICATION ======================
 
-# Si on arrive ici, c'est que l'utilisateur est authentifié
+# A partir d'ici, l'utilisateur est authentifié
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 st.title("Prédictions de matchs de football")
