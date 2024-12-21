@@ -10,30 +10,41 @@ NEXTJS_CHECK_SUB_URL = "https://my-football-zeta.vercel.app/api/check-subscripti
 params = st.experimental_get_query_params()
 url_token = params.get('token', [None])[0]  # Récupère le token depuis l'URL s'il existe
 
+# Affiche le token pour vérifier son extraction
+st.write(f"Token extrait de l'URL: {url_token}")
+
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
     if url_token:
+        st.write("Token trouvé dans l'URL, tentative d'authentification...")
         # Si on a un token dans l'URL, on l'utilise directement
-        resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get('success', False):
-                st.session_state.authenticated = True
-                st.success("Authentification réussie !")
-                st.experimental_rerun()
+        try:
+            resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
+            st.write(f"Code de statut de la réponse: {resp.status_code}")
+            st.write(f"Contenu de la réponse: {resp.text}")
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get('success', False):
+                    st.session_state.authenticated = True
+                    st.success("Authentification réussie !")
+                    st.experimental_rerun()
+                else:
+                    st.title("Authentification requise")
+                    st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+                    st.stop()
             else:
+                try:
+                    error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
+                except:
+                    error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
                 st.title("Authentification requise")
-                st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+                st.error(error_message)
                 st.stop()
-        else:
-            try:
-                error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
-            except:
-                error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
+        except Exception as e:
             st.title("Authentification requise")
-            st.error(error_message)
+            st.error(f"Erreur lors de l'authentification : {e}")
             st.stop()
     else:
         # Pas de token dans l'URL, on conserve le comportement de saisie manuelle
@@ -41,21 +52,27 @@ if not st.session_state.authenticated:
         token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
         if st.button("Se connecter"):
             if token:
-                resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data.get('success', False):
-                        st.session_state.authenticated = True
-                        st.success("Authentification réussie !")
-                        st.experimental_rerun()
+                st.write("Token saisi manuellement, tentative d'authentification...")
+                try:
+                    resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
+                    st.write(f"Code de statut de la réponse: {resp.status_code}")
+                    st.write(f"Contenu de la réponse: {resp.text}")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if data.get('success', False):
+                            st.session_state.authenticated = True
+                            st.success("Authentification réussie !")
+                            st.experimental_rerun()
+                        else:
+                            st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
                     else:
-                        st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
-                else:
-                    try:
-                        error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
-                    except:
-                        error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
-                    st.error(error_message)
+                        try:
+                            error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
+                        except:
+                            error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
+                        st.error(error_message)
+                except Exception as e:
+                    st.error(f"Erreur lors de l'authentification : {e}")
             else:
                 st.error("Veuillez saisir un token.")
         st.stop()
@@ -70,6 +87,8 @@ st.markdown("""
 *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
 Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
 """)
+
+# [Le reste de votre code]
 
 # Clés API
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
