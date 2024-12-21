@@ -11,8 +11,8 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 # Récupération du token dans l'URL
-params = st.experimental_get_query_params()
-url_token = params.get('token', [None])[0]  # Récupère le token depuis l'URL s'il existe
+params = st.query_params  # Remplace st.experimental_get_query_params()
+url_token = params.get('token', [None])[0]
 
 # Affiche le token pour vérifier son extraction
 st.write(f"**Token extrait de l'URL:** {url_token}")
@@ -35,7 +35,7 @@ if not st.session_state.authenticated:
                     st.success("**Authentification réussie !**")
                     # Affiche l'état après authentification
                     st.write(f"**Authenticated (après mise à jour):** {st.session_state.authenticated}")
-                    st.experimental_rerun()
+                    st.rerun()  # Remplace st.experimental_rerun()
                 else:
                     st.title("Authentification requise")
                     st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
@@ -50,7 +50,6 @@ if not st.session_state.authenticated:
             st.title("Authentification requise")
             st.error(f"**Erreur lors de l'authentification :** {e}")
     else:
-        # Pas de token dans l'URL, on conserve le comportement de saisie manuelle
         st.title("Authentification requise")
         token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
         if st.button("Se connecter"):
@@ -67,7 +66,7 @@ if not st.session_state.authenticated:
                             st.success("**Authentification réussie !**")
                             # Affiche l'état après authentification
                             st.write(f"**Authenticated (après mise à jour):** {st.session_state.authenticated}")
-                            st.experimental_rerun()
+                            st.rerun()  # Remplace st.experimental_rerun()
                         else:
                             st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
                     else:
@@ -80,8 +79,7 @@ if not st.session_state.authenticated:
                     st.error(f"**Erreur lors de l'authentification :** {e}")
             else:
                 st.error("Veuillez saisir un token.")
-    # Stop rendering further if not authenticated
-    st.stop()
+        st.stop()
 
 # ===================== FIN AJOUT AUTHENTIFICATION ======================
 
@@ -94,8 +92,6 @@ st.markdown("""
 *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
 Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
 """)
-
-# [Le reste de votre code]
 
 # Ajouter un bouton temporaire pour tester l'API
 if st.button("Tester API"):
