@@ -3,17 +3,21 @@ import requests
 import datetime
 from datetime import date
 import jwt  # Assurez-vous que PyJWT est installé : pip install PyJWT
+import os  # Pour lire les variables d'environnement dans Heroku
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== AJOUT AUTHENTIFICATION ==========================
-NEXTJS_CHECK_SUB_URL = st.secrets["NEXTJS_CHECK_SUB_URL"]
+# Récupérer les variables d'environnement depuis Heroku
+NEXTJS_CHECK_SUB_URL = os.getenv("NEXTJS_CHECK_SUB_URL")
+API_KEY = os.getenv("API_KEY")
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+JWT_SECRET = os.getenv("JWT_SECRET")
 
-# Clés API sécurisées via st.secrets
-API_KEY = st.secrets["API_KEY"]
-WEATHER_API_KEY = st.secrets["WEATHER_API_KEY"]
-JWT_SECRET = st.secrets["JWT_SECRET"]
+if not NEXTJS_CHECK_SUB_URL or not API_KEY or not WEATHER_API_KEY or not JWT_SECRET:
+    st.error("Certains secrets ne sont pas configurés correctement dans Heroku.")
+    st.stop()
 
 # Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
@@ -110,6 +114,8 @@ if st.session_state.authenticated:
     if st.button("Se déconnecter"):
         logout()
     
+    # Reste du contenu de l'application...
+
     # ===================== CONTENU EXISTANT ======================
     
     # Sélection de la date
