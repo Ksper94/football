@@ -1,27 +1,30 @@
+import os
+import sys
 import streamlit as st
 import requests
 import datetime
 from datetime import date
 import jwt  # Assurez-vous que PyJWT est installé : pip install PyJWT
-import os
+
+# ===================== Vérification des Variables d'Environnement =====================
+REQUIRED_ENV_VARS = ["NEXTJS_CHECK_SUB_URL", "API_KEY", "WEATHER_API_KEY", "JWT_SECRET"]
+
+# Vérifier que toutes les variables d'environnement nécessaires sont définies
+missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+if missing_vars:
+    st.error(f"Les variables d'environnement suivantes sont manquantes : {', '.join(missing_vars)}")
+    sys.exit(1)
+
+# Charger les variables d'environnement
+NEXTJS_CHECK_SUB_URL = os.getenv("NEXTJS_CHECK_SUB_URL")
+API_KEY = os.getenv("API_KEY")
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+JWT_SECRET = os.getenv("JWT_SECRET")
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== AJOUT AUTHENTIFICATION ==========================
-NEXTJS_CHECK_SUB_URL = os.getenv("NEXTJS_CHECK_SUB_URL")  # Récupération via os.getenv
-API_KEY = os.getenv("API_KEY")
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-JWT_SECRET = os.getenv("JWT_SECRET")
-
-# Lignes de débogage pour vérifier les secrets
-st.write("NEXTJS_CHECK_SUB_URL:", NEXTJS_CHECK_SUB_URL)
-st.write("API_KEY:", API_KEY)
-st.write("WEATHER_API_KEY:", WEATHER_API_KEY)
-st.write("JWT_SECRET:", JWT_SECRET)
-st.write("Liste des variables d'environnement disponibles :")
-st.write(os.environ)
-
 # Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -66,6 +69,7 @@ def verify_jwt(token):
 
 if not st.session_state.authenticated:
     if url_token:
+        # Optionnel : Vérifier localement avant d'appeler l'API
         is_valid, message = verify_jwt(url_token)
         if is_valid:
             st.session_state.authenticated = True
@@ -82,6 +86,7 @@ if not st.session_state.authenticated:
             if token:
                 success, message = check_subscription(token)
                 if success:
+                    # Optionnel : Vérifier localement
                     is_valid, verify_message = verify_jwt(token)
                     if is_valid:
                         st.session_state.authenticated = True
@@ -94,6 +99,7 @@ if not st.session_state.authenticated:
                     st.error(message)
             else:
                 st.error("Veuillez saisir un token.")
+        # Bouton de déconnexion visible uniquement si authentifié
         if st.session_state.authenticated:
             if st.button("Se déconnecter"):
                 logout()
@@ -114,7 +120,11 @@ if st.session_state.authenticated:
     if st.button("Se déconnecter"):
         logout()
 
-    # [Le reste de votre code existant]
+# ===================== TEST DES VARIABLES D'ENVIRONNEMENT =====================
+    st.write("NEXTJS_CHECK_SUB_URL:", NEXTJS_CHECK_SUB_URL)
+    st.write("API_KEY:", API_KEY)
+    st.write("WEATHER_API_KEY:", WEATHER_API_KEY)
+    st.write("JWT_SECRET:", JWT_SECRET)
 
 
     # ===================== CONTENU EXISTANT ======================
