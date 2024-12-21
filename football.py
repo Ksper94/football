@@ -11,24 +11,24 @@ params = st.experimental_get_query_params()
 url_token = params.get('token', [None])[0]  # Récupère le token depuis l'URL s'il existe
 
 # Affiche le token pour vérifier son extraction
-st.write(f"Token extrait de l'URL: {url_token}")
+st.write(f"**Token extrait de l'URL:** {url_token}")
 
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
     if url_token:
-        st.write("Token trouvé dans l'URL, tentative d'authentification...")
+        st.write("**Token trouvé dans l'URL, tentative d'authentification...**")
         # Si on a un token dans l'URL, on l'utilise directement
         try:
             resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
-            st.write(f"Code de statut de la réponse: {resp.status_code}")
-            st.write(f"Contenu de la réponse: {resp.text}")
+            st.write(f"**Code de statut de la réponse de l'API:** {resp.status_code}")
+            st.write(f"**Contenu de la réponse de l'API:** {resp.text}")
             if resp.status_code == 200:
                 data = resp.json()
                 if data.get('success', False):
                     st.session_state.authenticated = True
-                    st.success("Authentification réussie !")
+                    st.success("**Authentification réussie !**")
                     st.experimental_rerun()
                 else:
                     st.title("Authentification requise")
@@ -44,7 +44,7 @@ if not st.session_state.authenticated:
                 st.stop()
         except Exception as e:
             st.title("Authentification requise")
-            st.error(f"Erreur lors de l'authentification : {e}")
+            st.error(f"**Erreur lors de l'authentification :** {e}")
             st.stop()
     else:
         # Pas de token dans l'URL, on conserve le comportement de saisie manuelle
@@ -52,16 +52,16 @@ if not st.session_state.authenticated:
         token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
         if st.button("Se connecter"):
             if token:
-                st.write("Token saisi manuellement, tentative d'authentification...")
+                st.write("**Token saisi manuellement, tentative d'authentification...**")
                 try:
                     resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
-                    st.write(f"Code de statut de la réponse: {resp.status_code}")
-                    st.write(f"Contenu de la réponse: {resp.text}")
+                    st.write(f"**Code de statut de la réponse de l'API:** {resp.status_code}")
+                    st.write(f"**Contenu de la réponse de l'API:** {resp.text}")
                     if resp.status_code == 200:
                         data = resp.json()
                         if data.get('success', False):
                             st.session_state.authenticated = True
-                            st.success("Authentification réussie !")
+                            st.success("**Authentification réussie !**")
                             st.experimental_rerun()
                         else:
                             st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
@@ -72,10 +72,11 @@ if not st.session_state.authenticated:
                             error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
                         st.error(error_message)
                 except Exception as e:
-                    st.error(f"Erreur lors de l'authentification : {e}")
+                    st.error(f"**Erreur lors de l'authentification :** {e}")
             else:
                 st.error("Veuillez saisir un token.")
         st.stop()
+
 # ===================== FIN AJOUT AUTHENTIFICATION ======================
 
 # A partir d'ici, l'utilisateur est authentifié
@@ -87,6 +88,16 @@ st.markdown("""
 *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
 Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
 """)
+
+# Ajouter un bouton temporaire pour tester l'API
+if st.button("Tester API"):
+    test_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjBlOWYzMy1hZjNjLTRhM2EtOGEwOC1lZGQ4MmE3Y2UyY2MiLCJpYXQiOjE3MzQ3MTA3MTUsImV4cCI6MTczNzMwMjcxNX0.PDSrcMZE_SsytfzIsSEGxpCIiJYP8b8Ldguhotpsnbk"
+    try:
+        response = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": test_token})
+        st.write(f"**Code de statut de la réponse de l'API:** {response.status_code}")
+        st.write(f"**Contenu de la réponse de l'API:** {response.text}")
+    except Exception as e:
+        st.error(f"**Erreur lors de la requête API :** {e}")
 
 # [Le reste de votre code]
 
