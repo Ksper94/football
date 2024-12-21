@@ -3,21 +3,22 @@ import requests
 import datetime
 from datetime import date
 import jwt  # Assurez-vous que PyJWT est installé : pip install PyJWT
-import os  # Pour lire les variables d'environnement dans Heroku
+import os
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== AJOUT AUTHENTIFICATION ==========================
-# Récupérer les variables d'environnement depuis Heroku
-NEXTJS_CHECK_SUB_URL = os.getenv("NEXTJS_CHECK_SUB_URL")
+NEXTJS_CHECK_SUB_URL = os.getenv("NEXTJS_CHECK_SUB_URL")  # Récupération via os.getenv
 API_KEY = os.getenv("API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 JWT_SECRET = os.getenv("JWT_SECRET")
 
-if not NEXTJS_CHECK_SUB_URL or not API_KEY or not WEATHER_API_KEY or not JWT_SECRET:
-    st.error("Certains secrets ne sont pas configurés correctement dans Heroku.")
-    st.stop()
+# Lignes de débogage pour vérifier les secrets
+st.write("NEXTJS_CHECK_SUB_URL:", NEXTJS_CHECK_SUB_URL)
+st.write("API_KEY:", API_KEY)
+st.write("WEATHER_API_KEY:", WEATHER_API_KEY)
+st.write("JWT_SECRET:", JWT_SECRET)
 
 # Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
@@ -63,7 +64,6 @@ def verify_jwt(token):
 
 if not st.session_state.authenticated:
     if url_token:
-        # Optionnel : Vérifier localement avant d'appeler l'API
         is_valid, message = verify_jwt(url_token)
         if is_valid:
             st.session_state.authenticated = True
@@ -80,7 +80,6 @@ if not st.session_state.authenticated:
             if token:
                 success, message = check_subscription(token)
                 if success:
-                    # Optionnel : Vérifier localement
                     is_valid, verify_message = verify_jwt(token)
                     if is_valid:
                         st.session_state.authenticated = True
@@ -93,7 +92,6 @@ if not st.session_state.authenticated:
                     st.error(message)
             else:
                 st.error("Veuillez saisir un token.")
-        # Bouton de déconnexion visible uniquement si authentifié
         if st.session_state.authenticated:
             if st.button("Se déconnecter"):
                 logout()
@@ -109,12 +107,13 @@ if st.session_state.authenticated:
     *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
     Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
     """)
-    
+
     # Bouton de déconnexion accessible depuis le contenu principal
     if st.button("Se déconnecter"):
         logout()
-    
-    # Reste du contenu de l'application...
+
+    # [Le reste de votre code existant]
+
 
     # ===================== CONTENU EXISTANT ======================
     
