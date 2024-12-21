@@ -19,6 +19,8 @@ st.write("NEXTJS_CHECK_SUB_URL:", NEXTJS_CHECK_SUB_URL)
 st.write("API_KEY:", API_KEY)
 st.write("WEATHER_API_KEY:", WEATHER_API_KEY)
 st.write("JWT_SECRET:", JWT_SECRET)
+st.write("Liste des variables d'environnement disponibles :")
+st.write(os.environ)
 
 # Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
