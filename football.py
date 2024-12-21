@@ -3,6 +3,10 @@ import requests
 import datetime
 from datetime import date
 
+# ===================== CONFIGURATION DE LA PAGE ==========================
+# Cette ligne doit être la toute première commande Streamlit
+st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
+
 # ===================== AJOUT AUTHENTIFICATION ==========================
 NEXTJS_CHECK_SUB_URL = "https://my-football-zeta.vercel.app/api/check-subscription"
 
@@ -23,7 +27,6 @@ st.write(f"**Authenticated:** {st.session_state.authenticated}")
 if not st.session_state.authenticated:
     if url_token:
         st.write("**Token trouvé dans l'URL, tentative d'authentification...**")
-        # Si on a un token dans l'URL, on l'utilise directement
         try:
             resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
             st.write(f"**Code de statut de la réponse de l'API:** {resp.status_code}")
@@ -83,27 +86,26 @@ if not st.session_state.authenticated:
 
 # ===================== FIN AJOUT AUTHENTIFICATION ======================
 
-# À partir d'ici, l'utilisateur est authentifié
-st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
+# Contenu Principal de l'Application (seulement si authentifié)
+if st.session_state.authenticated:
+    st.title("Bienvenue dans l'application de Prédiction de Matchs")
+    st.write("Vous êtes authentifié avec succès !")
+    st.markdown("""
+    *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
+    Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
+    """)
 
-st.title("Prédictions de matchs de football")
+    # Ajouter un bouton temporaire pour tester l'API
+    if st.button("Tester API"):
+        test_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjBlOWYzMy1hZjNjLTRhM2EtOGEwOC1lZGQ4MmE3Y2UyY2MiLCJpYXQiOjE3MzQ3MTA3MTUsImV4cCI6MTczNzMwMjcxNX0.PDSrcMZE_SsytfzIsSEGxpCIiJYP8b8Ldguhotpsnbk"
+        try:
+            response = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": test_token})
+            st.write(f"**Code de statut de la réponse de l'API:** {response.status_code}")
+            st.write(f"**Contenu de la réponse de l'API:** {response.text}")
+        except Exception as e:
+            st.error(f"**Erreur lors de la requête API :** {e}")
 
-st.markdown("""
-*Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
-Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
-""")
-
-# Ajouter un bouton temporaire pour tester l'API
-if st.button("Tester API"):
-    test_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjBlOWYzMy1hZjNjLTRhM2EtOGEwOC1lZGQ4MmE3Y2UyY2MiLCJpYXQiOjE3MzQ3MTA3MTUsImV4cCI6MTczNzMwMjcxNX0.PDSrcMZE_SsytfzIsSEGxpCIiJYP8b8Ldguhotpsnbk"
-    try:
-        response = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": test_token})
-        st.write(f"**Code de statut de la réponse de l'API:** {response.status_code}")
-        st.write(f"**Contenu de la réponse de l'API:** {response.text}")
-    except Exception as e:
-        st.error(f"**Erreur lors de la requête API :** {e}")
-
-# [Le reste de votre code]
+    # [Le reste de votre code]
 
 # Clés API
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
