@@ -4,7 +4,6 @@ import datetime
 from datetime import date
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
-# Cette ligne doit être la toute première commande Streamlit
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== AJOUT AUTHENTIFICATION ==========================
@@ -15,19 +14,22 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 # Récupération du token dans l'URL
-params = st.query_params  # Remplace st.experimental_get_query_params()
+params = st.experimental_get_query_params()  # Utilisé pour récupérer les paramètres de l'URL
 url_token = params.get('token', [None])[0]
 
 if not st.session_state.authenticated:
     if url_token:
         try:
+            st.write(f"Token reçu : {url_token}")  # Log du token pour débogage
             resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
+            st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Log de la réponse API
+
             if resp.status_code == 200:
                 data = resp.json()
                 if data.get('success', False):
                     st.session_state.authenticated = True
                     st.success("**Authentification réussie !**")
-                    st.rerun()  # Remplace st.experimental_rerun()
+                    st.experimental_rerun()  # Redémarrer l'application après authentification
                 else:
                     st.title("Authentification requise")
                     st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
@@ -48,12 +50,13 @@ if not st.session_state.authenticated:
             if token:
                 try:
                     resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
+                    st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Log pour validation manuelle
                     if resp.status_code == 200:
                         data = resp.json()
                         if data.get('success', False):
                             st.session_state.authenticated = True
                             st.success("**Authentification réussie !**")
-                            st.rerun()  # Remplace st.experimental_rerun()
+                            st.experimental_rerun()
                         else:
                             st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
                     else:
@@ -79,7 +82,7 @@ if st.session_state.authenticated:
     Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
     """)
     
-    # [Le reste de votre code]
+    # [Le reste de votre code pour les prédictions]
 
 # Clés API
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
@@ -100,6 +103,9 @@ headers = {
     'x-apisports-key': API_KEY,
     'x-apisports-host': 'v3.football.api-sports.io'
 }
+
+# [Votre code principal de l'application continue ici...]
+
 
 # Sélection de la date
 today = date.today()
