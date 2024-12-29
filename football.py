@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import datetime  # Ajout de l'import manquant
+import datetime
 from datetime import date
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
@@ -21,64 +21,45 @@ st.write(f"Query params: {params}")  # Debug: Afficher tous les paramètres d'UR
 url_token = params.get('token', [None])[0] if isinstance(params.get('token'), list) else params.get('token')
 st.write(f"Token extrait de l'URL : {url_token}")  # Debug: Afficher le token extrait
 
+# Fonction pour gérer l'authentification
+def handle_authentication(token):
+    try:
+        st.write(f"Token reçu : {token}")  # Debug: Afficher le token reçu
+        resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
+        st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Debug: Log de la réponse API
+
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get('success', False):
+                st.session_state.authenticated = True
+                st.experimental_set_query_params()  # Nettoie les paramètres d'URL
+                st.success("**Authentification réussie !**")
+            else:
+                st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+        else:
+            try:
+                error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
+            except:
+                error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
+            st.error(error_message)
+    except Exception as e:
+        st.error(f"**Erreur lors de l'authentification :** {e}")
+
+# Authentification requise si non encore authentifié
 if not st.session_state.authenticated:
     if url_token:
-        try:
-            st.write(f"Token reçu : {url_token}")  # Debug: Afficher le token reçu
-            resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
-            st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Debug: Log de la réponse API
-
-            if resp.status_code == 200:
-                data = resp.json()
-                if data.get('success', False):
-                    st.session_state.authenticated = True
-                    st.success("**Authentification réussie !**")
-                    st.rerun()  # Correction ici
-                else:
-                    st.title("Authentification requise")
-                    st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
-            else:
-                try:
-                    error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
-                except:
-                    error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
-                st.title("Authentification requise")
-                st.error(error_message)
-        except Exception as e:
-            st.title("Authentification requise")
-            st.error(f"**Erreur lors de l'authentification :** {e}")
+        handle_authentication(url_token)
     else:
         st.title("Authentification requise")
         token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
         if st.button("Se connecter"):
             if token:
-                try:
-                    st.write(f"Token saisi manuellement : {token}")  # Debug: Afficher le token saisi
-                    resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
-                    st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Debug: Log de la réponse API
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        if data.get('success', False):
-                            st.session_state.authenticated = True
-                            st.success("**Authentification réussie !**")
-                            st.rerun()  # Correction ici
-                        else:
-                            st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
-                    else:
-                        try:
-                            error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
-                        except:
-                            error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
-                        st.error(error_message)
-                except Exception as e:
-                    st.error(f"**Erreur lors de l'authentification :** {e}")
+                handle_authentication(token)
             else:
                 st.error("Veuillez saisir un token.")
-        st.stop()
+        st.stop()  # Arrête l'exécution si l'utilisateur n'est pas authentifié
 
-# ===================== FIN AJOUT AUTHENTIFICATION ======================
-
-# Contenu Principal de l'Application (seulement si authentifié)
+# ===================== CONTENU DE L'APPLICATION ======================
 if st.session_state.authenticated:
     st.title("Bienvenue dans l'application de Prédiction de Matchs")
     st.write("Vous êtes authentifié avec succès !")
