@@ -33,7 +33,7 @@ if not st.session_state.authenticated:
                 if data.get('success', False):
                     st.session_state.authenticated = True
                     st.success("**Authentification réussie !**")
-                    st.experimental_rerun()  # Redémarrer l'application après authentification
+                    st.rerun()  # Correction ici
                 else:
                     st.title("Authentification requise")
                     st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
@@ -61,7 +61,7 @@ if not st.session_state.authenticated:
                         if data.get('success', False):
                             st.session_state.authenticated = True
                             st.success("**Authentification réussie !**")
-                            st.experimental_rerun()
+                            st.rerun()  # Correction ici
                         else:
                             st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
                     else:
@@ -100,7 +100,7 @@ API_URL_FIXTURES = 'https://v3.football.api-sports.io/fixtures'
 API_URL_TEAMS = 'https://v3.football.api-sports.io/teams'
 API_URL_STANDINGS = 'https://v3.football.api-sports.io/standings'
 API_URL_ODDS = 'https://v3.football.api-sports.io/odds'
-API_URL_WEATHER = 'https://my.meteoblue.com/packages/basic-1h'  # Ajouté ici
+API_URL_WEATHER = 'https://my.meteoblue.com/packages/basic-1h'
 
 # Headers pour l'API football
 headers = {
