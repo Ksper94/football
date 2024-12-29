@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import datetime
+import datetime  # Ajout de l'import manquant
 from datetime import date
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
@@ -14,15 +14,17 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 # Récupération du token dans l'URL
-params = st.query_params  # Remplacement de st.experimental_get_query_params
+params = st.query_params
+st.write(f"Query params: {params}")  # Debug: Afficher tous les paramètres d'URL
 url_token = params.get('token', [None])[0]
+st.write(f"Token extrait de l'URL : {url_token}")  # Debug: Afficher le token extrait
 
 if not st.session_state.authenticated:
     if url_token:
         try:
-            st.write(f"Token reçu : {url_token}")  # Log du token pour débogage
+            st.write(f"Token reçu : {url_token}")  # Debug: Afficher le token reçu
             resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": url_token})
-            st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Log de la réponse API
+            st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Debug: Log de la réponse API
 
             if resp.status_code == 200:
                 data = resp.json()
@@ -49,8 +51,9 @@ if not st.session_state.authenticated:
         if st.button("Se connecter"):
             if token:
                 try:
+                    st.write(f"Token saisi manuellement : {token}")  # Debug: Afficher le token saisi
                     resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
-                    st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Log pour validation manuelle
+                    st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Debug: Log de la réponse API
                     if resp.status_code == 200:
                         data = resp.json()
                         if data.get('success', False):
@@ -95,9 +98,7 @@ API_URL_FIXTURES = 'https://v3.football.api-sports.io/fixtures'
 API_URL_TEAMS = 'https://v3.football.api-sports.io/teams'
 API_URL_STANDINGS = 'https://v3.football.api-sports.io/standings'
 API_URL_ODDS = 'https://v3.football.api-sports.io/odds'
-
-# URL météo (Meteoblue)
-API_URL_WEATHER = 'https://my.meteoblue.com/packages/basic-1h'
+API_URL_WEATHER = 'https://my.meteoblue.com/packages/basic-1h'  # Ajouté ici
 
 # Headers pour l'API football
 headers = {
@@ -106,7 +107,6 @@ headers = {
 }
 
 # [Votre code principal de l'application continue ici...]
-
 
 # Sélection de la date
 today = date.today()
