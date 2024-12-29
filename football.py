@@ -14,7 +14,7 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 # Récupération du token dans l'URL
-params = st.experimental_get_query_params()  # Utilisé pour récupérer les paramètres de l'URL
+params = st.query_params  # Remplace st.experimental_get_query_params
 url_token = params.get('token', [None])[0]
 
 if not st.session_state.authenticated:
@@ -29,7 +29,7 @@ if not st.session_state.authenticated:
                 if data.get('success', False):
                     st.session_state.authenticated = True
                     st.success("**Authentification réussie !**")
-                    st.experimental_rerun()  # Redémarrer l'application après authentification
+                    st.experimental_rerun()  # Corrigé pour utiliser la fonction st.rerun()
                 else:
                     st.title("Authentification requise")
                     st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
@@ -56,7 +56,7 @@ if not st.session_state.authenticated:
                         if data.get('success', False):
                             st.session_state.authenticated = True
                             st.success("**Authentification réussie !**")
-                            st.experimental_rerun()
+                            st.rerun()  # Corrigé pour utiliser la fonction st.rerun()
                         else:
                             st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
                     else:
@@ -81,8 +81,9 @@ if st.session_state.authenticated:
     *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
     Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
     """)
-    
-    # [Le reste de votre code pour les prédictions]
+
+# ===================== RESTE DU CODE =====================
+# Le reste de votre code pour les prédictions reste inchangé...
 
 # Clés API
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
