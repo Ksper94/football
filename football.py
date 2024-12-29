@@ -15,19 +15,14 @@ if 'authenticated' not in st.session_state:
 
 # Récupération du token dans l'URL
 params = st.query_params
-st.write(f"Query params: {params}")  # Debug: Afficher tous les paramètres d'URL
 
 # Extraction du token
 url_token = params.get('token', [None])[0] if isinstance(params.get('token'), list) else params.get('token')
-st.write(f"Token extrait de l'URL : {url_token}")  # Debug: Afficher le token extrait
 
 # Fonction pour gérer l'authentification
 def handle_authentication(token):
     try:
-        st.write(f"Token reçu : {token}")  # Debug: Afficher le token reçu
         resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
-        st.write(f"Statut API : {resp.status_code}, Réponse : {resp.json()}")  # Debug: Log de la réponse API
-
         if resp.status_code == 200:
             data = resp.json()
             if data.get('success', False):
