@@ -29,7 +29,7 @@ if not st.session_state.authenticated:
                 if data.get('success', False):
                     st.session_state.authenticated = True
                     st.success("**Authentification réussie !**")
-                    st.experimental_rerun()  # Corrigé pour utiliser la fonction st.rerun()
+                    st.experimental_rerun()  # Redémarrer l'application après authentification
                 else:
                     st.title("Authentification requise")
                     st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
@@ -56,7 +56,7 @@ if not st.session_state.authenticated:
                         if data.get('success', False):
                             st.session_state.authenticated = True
                             st.success("**Authentification réussie !**")
-                            st.rerun()  # Corrigé pour utiliser la fonction st.rerun()
+                            st.experimental_rerun()
                         else:
                             st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
                     else:
