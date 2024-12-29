@@ -14,7 +14,7 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 # Récupération du token dans l'URL
-params = st.query_params  # Remplace st.experimental_get_query_params
+params = st.query_params  # Remplacement de st.experimental_get_query_params
 url_token = params.get('token', [None])[0]
 
 if not st.session_state.authenticated:
