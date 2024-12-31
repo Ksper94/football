@@ -31,21 +31,31 @@ def handle_authentication(token):
                 st.query_params = {}
                 st.success("**Authentification réussie !**")
             else:
+                # L'API répond 200 mais success=False
                 st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+                st.session_state.authenticated = False
+                st.stop()  # Bloquer l'exécution
         else:
+            # L'API ne répond pas 200
             try:
                 error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
             except:
                 error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
             st.error(error_message)
+            st.session_state.authenticated = False
+            st.stop()  # Bloquer l'exécution
     except Exception as e:
         st.error(f"**Erreur lors de l'authentification :** {e}")
+        st.session_state.authenticated = False
+        st.stop()  # Bloquer l'exécution
 
 # Authentification requise si non encore authentifié
 if not st.session_state.authenticated:
     if url_token:
+        # Tente d'authentifier avec le token trouvé dans l'URL
         handle_authentication(url_token)
     else:
+        # Aucun token dans l'URL : on demande manuellement à l'utilisateur
         st.title("Authentification requise")
         token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
         if st.button("Se connecter"):
@@ -56,17 +66,15 @@ if not st.session_state.authenticated:
         st.stop()  # Arrête l'exécution si l'utilisateur n'est pas authentifié
 
 # ===================== CONTENU DE L'APPLICATION ======================
-if st.session_state.authenticated:
-    st.title("Bienvenue dans l'application de Prédiction de Matchs")
-    st.write("Vous êtes authentifié avec succès !")
-    st.markdown("""
-    *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
-    Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
-    """)
+# A ce stade, st.session_state.authenticated est forcement True
+st.title("Bienvenue dans l'application de Prédiction de Matchs")
+st.write("Vous êtes authentifié avec succès !")
+st.markdown("""
+*Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
+Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
+""")
 
 # ===================== RESTE DU CODE =====================
-# Le reste de votre code pour les prédictions reste inchangé...
-
 # Clés API
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
@@ -84,8 +92,6 @@ headers = {
     'x-apisports-key': API_KEY,
     'x-apisports-host': 'v3.football.api-sports.io'
 }
-
-# [Votre code principal de l'application continue ici...]
 
 # Sélection de la date
 today = date.today()
@@ -105,7 +111,8 @@ european_top_competitions = {
 response = requests.get(API_URL_LEAGUES, headers=headers)
 if response.status_code == 200:
     data_leagues = response.json().get('response', [])
-    all_countries = list(set([league['country']['name'] for league in data_leagues if 'country' in league and league['country']['name'] is not None]))
+    all_countries = list(set([league['country']['name'] for league in data_leagues 
+                              if 'country' in league and league['country']['name'] is not None]))
     all_countries.sort()
 
     if selected_continent == "Europe":
@@ -281,7 +288,8 @@ def get_injury_factor(league_id, team_id):
     if injuries_resp.status_code == 200:
         injuries_data = injuries_resp.json().get('response', [])
         count = len(injuries_data)
-        injury_factor = max(0, 1 - count*0.05)
+        # Hypothèse : chaque blessure réduit un peu la "forme" de l'équipe
+        injury_factor = max(0, 1 - count * 0.05)
         return injury_factor
     else:
         return 0.9
@@ -315,14 +323,31 @@ def get_weather_factor(lat, lon, match_date):
     weather_resp = requests.get(API_URL_WEATHER, params=weather_params)
     if weather_resp.status_code == 200:
         weather_data = weather_resp.json()
+        # Hypothèse : s'il y a de la pluie, on pénalise un peu la qualité du match
         rain = weather_data.get('rain', 0)
         weather_factor = max(0, 1 - rain*0.1)
         return weather_factor
     else:
         return 0.8
 
+# ===================== LOGIQUE DE MATCH / CALCULS =====================
+
+if 'match_id' not in st.session_state:
+    st.session_state.match_id = None
+
+if league_id:
+    if response_fixtures.status_code == 200:
+        # match_id déjà récupéré plus haut
+        pass
+    else:
+        st.error("Impossible de récupérer les matchs.")
+
 if match_id:
-    selected_fixture = next((f for f in data_fixtures if f['fixture']['id'] == match_id), None)
+    st.session_state.match_id = match_id
+
+if st.session_state.match_id:
+    # On sélectionne la fixture en question
+    selected_fixture = next((f for f in data_fixtures if f['fixture']['id'] == st.session_state.match_id), None)
     if selected_fixture:
         home_team_id = selected_fixture['teams']['home']['id']
         away_team_id = selected_fixture['teams']['away']['id']
@@ -353,36 +378,43 @@ if match_id:
 
         st.markdown("---")
 
+        # Calcul des différents scores
         home_form_score = get_team_form(home_team_id, n=5)
         away_form_score = get_team_form(away_team_id, n=5)
 
         home_h2h_score, away_h2h_score = get_h2h_score(home_team_id, away_team_id)
-        home_odds_prob, draw_odds_prob, away_odds_prob = get_odds_score(match_id)
+        home_odds_prob, draw_odds_prob, away_odds_prob = get_odds_score(st.session_state.match_id)
         home_injury_factor = get_injury_factor(league_id, home_team_id)
         away_injury_factor = get_injury_factor(league_id, away_team_id)
 
         lat, lon = geocode_city(fixture_city)
         weather_factor = get_weather_factor(lat, lon, selected_date)
 
+        # Pondérations
         weight_form = 0.3
         weight_h2h = 0.2
         weight_odds = 0.3
         weight_weather = 0.1
         weight_injury = 0.1
 
-        home_base = (home_form_score * weight_form +
-                     home_h2h_score * weight_h2h +
-                     home_odds_prob * weight_odds +
-                     weather_factor * weight_weather +
-                     home_injury_factor * weight_injury)
+        home_base = (
+            home_form_score * weight_form +
+            home_h2h_score * weight_h2h +
+            home_odds_prob  * weight_odds +
+            weather_factor  * weight_weather +
+            home_injury_factor * weight_injury
+        )
 
-        away_base = (away_form_score * weight_form +
-                     away_h2h_score * weight_h2h +
-                     away_odds_prob * weight_odds +
-                     weather_factor * weight_weather +
-                     away_injury_factor * weight_injury)
+        away_base = (
+            away_form_score * weight_form +
+            away_h2h_score * weight_h2h +
+            away_odds_prob  * weight_odds +
+            weather_factor  * weight_weather +
+            away_injury_factor * weight_injury
+        )
 
-        draw_base = (draw_odds_prob * 0.7 + weather_factor * 0.3)
+        # On calcule le draw_base principalement via les cotes du match nul + la météo
+        draw_base = draw_odds_prob * 0.7 + weather_factor * 0.3
 
         total = home_base + away_base + draw_base
         if total > 0:
@@ -390,8 +422,10 @@ if match_id:
             draw_prob = draw_base / total
             away_prob = away_base / total
         else:
+            # fallback
             home_prob = draw_prob = away_prob = 1/3.0
 
+        # Affichage
         st.subheader("Probabilités estimées du résultat")
         st.write(f"- **{home_team_name} gagne :** {home_prob*100:.2f}%")
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
@@ -406,3 +440,6 @@ if match_id:
         """)
     else:
         st.info("Aucun détail de match disponible.")
+else:
+    # Aucune fixture sélectionnée
+    pass
