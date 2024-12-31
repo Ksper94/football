@@ -7,7 +7,7 @@ from datetime import date
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== AJOUT AUTHENTIFICATION ==========================
-NEXTJS_CHECK_SUB_URL = "https://my-football-zeta.vercel.app/api/check-subscription"
+NEXTJS_CHECK_SUB_URL = "https://foot-predictions.com/api/check-subscription"
 
 # Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
