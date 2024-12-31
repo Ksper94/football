@@ -27,7 +27,8 @@ def handle_authentication(token):
             data = resp.json()
             if data.get('success', False):
                 st.session_state.authenticated = True
-                st.experimental_set_query_params()  # Nettoie les paramètres d'URL
+                # Nettoyer les query params en utilisant la nouvelle API :
+                st.query_params = {}
                 st.success("**Authentification réussie !**")
             else:
                 st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
