@@ -56,7 +56,7 @@ st.markdown("""
 Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
 """)
 
-
+# ===================== API CONFIGURATION ==========================
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
 
@@ -76,6 +76,13 @@ headers = {
 # Sélection de la date
 today = date.today()
 selected_date = st.date_input("Sélectionnez une date (à partir d'aujourd'hui):", min_value=today, value=today)
+
+# Détermination de la saison basée sur la date sélectionnée
+# Supposons que la saison commence en août et finit en mai de l'année suivante
+if selected_date.month < 8:  # Si avant août, c'est la saison précédente
+    season_year = selected_date.year - 1
+else:
+    season_year = selected_date.year
 
 # Continents
 continents = ["Europe", "South America", "North America", "Asia", "Africa"]
@@ -125,7 +132,7 @@ else:
 if league_id:
     params_fixtures = {
         'league': league_id,
-        'season': datetime.datetime.now().year,
+        'season': season_year,  # Utilisation de la saison calculée
         'date': selected_date.strftime('%Y-%m-%d')
     }
     response_fixtures = requests.get(API_URL_FIXTURES, headers=headers, params=params_fixtures)
@@ -151,7 +158,7 @@ if league_id:
 else:
     match_id = None
 
-
+# ... (le reste de votre code concernant l'affichage des détails du match, calcul des probabilités, etc. reste inchangé)
 def get_team_form(team_id, n=5):
     form_params = {
         'team': team_id,
