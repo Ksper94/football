@@ -1,50 +1,54 @@
 import streamlit as st
 import requests
-import datetime
 from datetime import date
+import datetime
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
-# Ce point d’entrée est censé vérifier (login+password) ET l’abonnement actif.
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
+# Point d’entrée pour l'authentification
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon ton domaine
 
 # Initialiser les variables de session
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
+if 'just_logged_in' not in st.session_state:
+    st.session_state.just_logged_in = False
+
 if 'continue_clicked' not in st.session_state:
     st.session_state.continue_clicked = False
 
-# Fonction pour gérer l'authentification via e-mail + mot de passe
+# ===================== FONCTION D'AUTHENTIFICATION ======================
 def handle_login(email, password):
     try:
-        # On envoie les identifiants au back-end
+        # Envoyer les identifiants au back-end
         resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
             data = resp.json()
             if data.get('success', False):
-                # Authentification OK + abonnement actif
+                # Authentification réussie et abonnement actif
                 st.session_state.authenticated = True
+                st.session_state.just_logged_in = True
                 st.success(data.get('message', "Authentification réussie !"))
             else:
-                # success=False => problème d'identifiants ou abonnement inactif
+                # Problème d'identifiants ou abonnement inactif
                 st.error(data.get('message', "Impossible de s'authentifier."))
                 st.session_state.authenticated = False
-                st.stop()
+                st.session_state.just_logged_in = False
         else:
-            # Code HTTP != 200 => erreur back-end
+            # Erreur côté back-end
             st.error(f"Erreur API (code HTTP: {resp.status_code}).")
             st.session_state.authenticated = False
-            st.stop()
+            st.session_state.just_logged_in = False
     except Exception as e:
         st.error(f"Erreur lors de la tentative de login: {e}")
         st.session_state.authenticated = False
-        st.stop()
+        st.session_state.just_logged_in = False
 
 # ===================== FORMULAIRE DE LOGIN ======================
-if not st.session_state.authenticated:
+if not st.session_state.authenticated and not st.session_state.continue_clicked:
     st.title("Connexion à l'application")
 
     email = st.text_input("Email", value="", placeholder="Votre email")
@@ -55,27 +59,24 @@ if not st.session_state.authenticated:
             handle_login(email, password)
         else:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
-    
-    st.stop()  # Arrêter l'exécution ici si non authentifié
 
-# ===================== BOUTON CONTINUER APRÈS AUTHENTIFICATION ======================
-if st.session_state.authenticated and not st.session_state.continue_clicked:
+# ===================== MESSAGE DE LOGIN RÉUSSI ET BOUTON CONTINUER ======================
+if st.session_state.authenticated and st.session_state.just_logged_in and not st.session_state.continue_clicked:
     st.success("Authentification réussie !")
     st.write("Cliquez sur le bouton ci-dessous pour accéder à l'application.")
-    st.button("Continuer")
-    st.session_state.continue_clicked = True
-    
-    st.stop()  # Arrêter l'exécution ici jusqu'à ce que l'utilisateur clique sur "Continuer"
+
+    if st.button("Continuer"):
+        st.session_state.continue_clicked = True
+        st.session_state.just_logged_in = False  # Réinitialiser l'indicateur
 
 # ===================== CONTENU AUTHENTIFIÉ ======================
-st.title("Bienvenue dans l'application de Prédiction de Matchs")
-st.write("Vous êtes authentifié avec succès (abonnement valide).")
-st.markdown("""
-*Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
-Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
-""")
-
-# ===================== LE RESTE DE VOTRE CODE STREAMLIT =====================
+if st.session_state.authenticated and st.session_state.continue_clicked:
+    st.title("Bienvenue dans l'application de Prédiction de Matchs")
+    st.write("Vous êtes authentifié avec succès (abonnement valide).")
+    st.markdown("""
+    *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
+    Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
+    """)
 
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
