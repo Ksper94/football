@@ -8,10 +8,14 @@ st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
 # Ce point d’entrée est censé vérifier (login+password) ET l’abonnement actif.
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
 
+# Initialiser les variables de session
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
+
+if 'continue_clicked' not in st.session_state:
+    st.session_state.continue_clicked = False
 
 # Fonction pour gérer l'authentification via e-mail + mot de passe
 def handle_login(email, password):
@@ -24,15 +28,13 @@ def handle_login(email, password):
                 # Authentification OK + abonnement actif
                 st.session_state.authenticated = True
                 st.success(data.get('message', "Authentification réussie !"))
-                # Force la ré-exécution pour afficher immédiatement la suite
-                st.experimental_rerun()
             else:
                 # success=False => problème d'identifiants ou abonnement inactif
                 st.error(data.get('message', "Impossible de s'authentifier."))
                 st.session_state.authenticated = False
                 st.stop()
         else:
-            # Code HTTP != 200 => erreur côté back-end
+            # Code HTTP != 200 => erreur back-end
             st.error(f"Erreur API (code HTTP: {resp.status_code}).")
             st.session_state.authenticated = False
             st.stop()
@@ -41,22 +43,32 @@ def handle_login(email, password):
         st.session_state.authenticated = False
         st.stop()
 
-# Si pas encore authentifié, on affiche un formulaire de login
+# ===================== FORMULAIRE DE LOGIN ======================
 if not st.session_state.authenticated:
     st.title("Connexion à l'application")
 
-    email = st.text_input("Email")
-    password = st.text_input("Mot de passe", type="password")
+    email = st.text_input("Email", value="", placeholder="Votre email")
+    password = st.text_input("Mot de passe", type="password", placeholder="••••••••")
 
     if st.button("Se connecter"):
         if email and password:
             handle_login(email, password)
         else:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
+    
+    st.stop()  # Arrêter l'exécution ici si non authentifié
 
-    st.stop()
+# ===================== BOUTON CONTINUER APRÈS AUTHENTIFICATION ======================
+if st.session_state.authenticated and not st.session_state.continue_clicked:
+    st.success("Authentification réussie !")
+    st.write("Cliquez sur le bouton ci-dessous pour accéder à l'application.")
+    
+    if st.button("Continuer"):
+        st.session_state.continue_clicked = True
+    
+    st.stop()  # Arrêter l'exécution ici jusqu'à ce que l'utilisateur clique sur "Continuer"
 
-# ===================== ICI : L'UTILISATEUR EST AUTHENTIFIÉ ======================
+# ===================== CONTENU AUTHENTIFIÉ ======================
 st.title("Bienvenue dans l'application de Prédiction de Matchs")
 st.write("Vous êtes authentifié avec succès (abonnement valide).")
 st.markdown("""
@@ -65,7 +77,6 @@ Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs
 """)
 
 # ===================== LE RESTE DE VOTRE CODE STREAMLIT =====================
-# ... Placez ici tout votre code supplémentaire : sélections, API calls, etc.
 
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
