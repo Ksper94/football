@@ -62,9 +62,8 @@ if not st.session_state.authenticated:
 if st.session_state.authenticated and not st.session_state.continue_clicked:
     st.success("Authentification réussie !")
     st.write("Cliquez sur le bouton ci-dessous pour accéder à l'application.")
-    
-    if st.button("Continuer"):
-        st.session_state.continue_clicked = True
+    st.button("Continuer")
+    st.session_state.continue_clicked = True
     
     st.stop()  # Arrêter l'exécution ici jusqu'à ce que l'utilisateur clique sur "Continuer"
 
