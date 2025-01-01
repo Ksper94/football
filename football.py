@@ -6,67 +6,58 @@ from datetime import date
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
-# ===================== AJOUT AUTHENTIFICATION ==========================
-NEXTJS_CHECK_SUB_URL = "https://foot-predictions.com/api/check-subscription"
+# ===================== AJOUT AUTHENTIFICATION AVEC FORMULAIRE ==========================
+
+# Remplace l'URL par ton nouvel endpoint (ex: https://foot-predictions.com/api/login)
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
 
 # Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
-# Récupération du token dans l'URL
-params = st.query_params
-
-# Extraction du token
-url_token = params.get('token', [None])[0] if isinstance(params.get('token'), list) else params.get('token')
-
-# Fonction pour gérer l'authentification
-def handle_authentication(token):
+# Fonction pour gérer l'authentification via e-mail + mot de passe
+def handle_login(email, password):
     try:
-        resp = requests.post(NEXTJS_CHECK_SUB_URL, json={"token": token})
+        # On envoie les identifiants au back-end Next.js (ou autre)
+        resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
             data = resp.json()
             if data.get('success', False):
+                # Authentification OK
                 st.session_state.authenticated = True
-                # Nettoyer les query params en utilisant la nouvelle API :
-                st.query_params = {}
-                st.success("**Authentification réussie !**")
+                st.success(data.get('message', "Authentification réussie !"))
+                # Optionnel : si ton endpoint renvoie un token, tu peux le stocker ici :
+                # st.session_state.jwt_token = data.get('token', None)
             else:
-                # L'API répond 200 mais success=False
-                st.error(data.get('message', "Votre abonnement n'est pas valide ou a expiré."))
+                # success=False => mauvais login ou abonnement inactif
+                st.error(data.get('message', "Impossible de s'authentifier."))
                 st.session_state.authenticated = False
-                st.stop()  # Bloquer l'exécution
+                st.stop()
         else:
-            # L'API ne répond pas 200
-            try:
-                error_message = resp.json().get('message', 'Impossible de vérifier l\'abonnement. Veuillez réessayer.')
-            except:
-                error_message = 'Impossible de vérifier l\'abonnement. Veuillez réessayer.'
-            st.error(error_message)
+            # Code HTTP != 200 => erreur du côté serveur
+            st.error(f"Erreur API, code HTTP: {resp.status_code}")
             st.session_state.authenticated = False
-            st.stop()  # Bloquer l'exécution
+            st.stop()
     except Exception as e:
-        st.error(f"**Erreur lors de l'authentification :** {e}")
+        st.error(f"Erreur lors de la tentative de login: {e}")
         st.session_state.authenticated = False
-        st.stop()  # Bloquer l'exécution
+        st.stop()
 
-# Authentification requise si non encore authentifié
+# Si on n'est pas encore authentifié, on affiche un formulaire Email + Mot de passe
 if not st.session_state.authenticated:
-    if url_token:
-        # Tente d'authentifier avec le token trouvé dans l'URL
-        handle_authentication(url_token)
-    else:
-        # Aucun token dans l'URL : on demande manuellement à l'utilisateur
-        st.title("Authentification requise")
-        token = st.text_input("Veuillez saisir votre token d'accès (JWT) :", type="password")
-        if st.button("Se connecter"):
-            if token:
-                handle_authentication(token)
-            else:
-                st.error("Veuillez saisir un token.")
-        st.stop()  # Arrête l'exécution si l'utilisateur n'est pas authentifié
+    st.title("Connexion à l'application")
 
-# ===================== CONTENU DE L'APPLICATION ======================
-# A ce stade, st.session_state.authenticated est forcement True
+    email = st.text_input("Email")
+    password = st.text_input("Mot de passe", type="password")
+
+    if st.button("Se connecter"):
+        if email and password:
+            handle_login(email, password)
+        else:
+            st.error("Veuillez renseigner votre email et votre mot de passe.")
+    st.stop()
+
+# ===================== CONTENU DE L'APPLICATION (SI AUTH REUSSIE) ======================
 st.title("Bienvenue dans l'application de Prédiction de Matchs")
 st.write("Vous êtes authentifié avec succès !")
 st.markdown("""
@@ -75,7 +66,6 @@ Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs
 """)
 
 # ===================== RESTE DU CODE =====================
-# Clés API
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
 
@@ -116,6 +106,7 @@ if response.status_code == 200:
     all_countries.sort()
 
     if selected_continent == "Europe":
+        # On ajoute "International" en tête pour regrouper les compétitions UEFA
         all_countries = ["International"] + all_countries
     selected_country = st.selectbox("Sélectionnez un pays :", all_countries)
 else:
@@ -400,16 +391,16 @@ if st.session_state.match_id:
         home_base = (
             home_form_score * weight_form +
             home_h2h_score * weight_h2h +
-            home_odds_prob  * weight_odds +
-            weather_factor  * weight_weather +
+            home_odds_prob * weight_odds +
+            weather_factor * weight_weather +
             home_injury_factor * weight_injury
         )
 
         away_base = (
             away_form_score * weight_form +
             away_h2h_score * weight_h2h +
-            away_odds_prob  * weight_odds +
-            weather_factor  * weight_weather +
+            away_odds_prob * weight_odds +
+            weather_factor * weight_weather +
             away_injury_factor * weight_injury
         )
 
