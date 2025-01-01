@@ -7,16 +7,16 @@ import datetime
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon ton domaine
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
 
-# Initialiser les variables de session
+# Initialisation de l'état de la session pour l'authentification
 if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False  # Par défaut, non authentifié
+    st.session_state.authenticated = False
 
 # Fonction pour gérer l'authentification via e-mail + mot de passe
 def handle_login(email, password):
     try:
-        # Envoyer les identifiants au back-end
+        # Envoi des identifiants au backend
         resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
             data = resp.json()
@@ -24,24 +24,22 @@ def handle_login(email, password):
                 # Authentification réussie
                 st.session_state.authenticated = True
                 st.success(data.get('message', "Authentification réussie !"))
+                st.rerun()  # Recharge l'application pour afficher le contenu protégé
             else:
-                # Problème d'identifiants ou abonnement inactif
+                # Échec de l'authentification (mauvais identifiants ou abonnement expiré)
                 st.error(data.get('message', "Impossible de s'authentifier."))
-                st.session_state.authenticated = False
         else:
-            # Erreur côté back-end
+            # Erreur côté backend
             st.error(f"Erreur API (code HTTP: {resp.status_code}).")
-            st.session_state.authenticated = False
     except Exception as e:
         st.error(f"Erreur lors de la tentative de login: {e}")
-        st.session_state.authenticated = False
 
-# ===================== FORMULAIRE DE LOGIN ======================
+# Affichage du formulaire de connexion si non authentifié
 if not st.session_state.authenticated:
     st.title("Connexion à l'application")
 
-    email = st.text_input("Email", value="", placeholder="Votre email")
-    password = st.text_input("Mot de passe", type="password", placeholder="••••••••")
+    email = st.text_input("Email")
+    password = st.text_input("Mot de passe", type="password")
 
     if st.button("Se connecter"):
         if email and password:
@@ -50,13 +48,14 @@ if not st.session_state.authenticated:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
     st.stop()
 
-# ===================== CONTENU AUTHENTIFIÉ ======================
+# ===================== CONTENU DE L'APPLICATION ==========================
 st.title("Bienvenue dans l'application de Prédiction de Matchs")
 st.write("Vous êtes authentifié avec succès (abonnement valide).")
 st.markdown("""
 *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
 Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
 """)
+
 
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
