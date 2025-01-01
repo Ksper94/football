@@ -6,36 +6,34 @@ from datetime import date
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
-# ===================== AJOUT AUTHENTIFICATION AVEC FORMULAIRE ==========================
+# ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
+# Ce point d’entrée est censé vérifier (login+password) ET l’abonnement actif.
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
 
-# Remplace l'URL par ton nouvel endpoint (ex: https://foot-predictions.com/api/login)
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
-
-# Initialiser l'état d'authentification dans le session state
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 # Fonction pour gérer l'authentification via e-mail + mot de passe
 def handle_login(email, password):
     try:
-        # On envoie les identifiants au back-end Next.js (ou autre)
+        # On envoie les identifiants au back-end
         resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
             data = resp.json()
             if data.get('success', False):
-                # Authentification OK
+                # Authentification OK + abonnement actif
                 st.session_state.authenticated = True
                 st.success(data.get('message', "Authentification réussie !"))
-                # Optionnel : si ton endpoint renvoie un token, tu peux le stocker ici :
-                # st.session_state.jwt_token = data.get('token', None)
+                # Si l'endpoint renvoie un token JWT, on peut le stocker :
+                # st.session_state.jwt_token = data.get('token')
             else:
-                # success=False => mauvais login ou abonnement inactif
+                # success=False => problème d'identifiants ou abonnement inactif
                 st.error(data.get('message', "Impossible de s'authentifier."))
                 st.session_state.authenticated = False
                 st.stop()
         else:
-            # Code HTTP != 200 => erreur du côté serveur
-            st.error(f"Erreur API, code HTTP: {resp.status_code}")
+            # Code HTTP != 200 => erreur back-end
+            st.error(f"Erreur API (code HTTP: {resp.status_code}).")
             st.session_state.authenticated = False
             st.stop()
     except Exception as e:
@@ -43,7 +41,7 @@ def handle_login(email, password):
         st.session_state.authenticated = False
         st.stop()
 
-# Si on n'est pas encore authentifié, on affiche un formulaire Email + Mot de passe
+# Si pas encore authentifié, on affiche un formulaire de login
 if not st.session_state.authenticated:
     st.title("Connexion à l'application")
 
@@ -57,15 +55,15 @@ if not st.session_state.authenticated:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
     st.stop()
 
-# ===================== CONTENU DE L'APPLICATION (SI AUTH REUSSIE) ======================
+# ===================== ICI : L'UTILISATEUR EST AUTHENTIFIÉ ======================
 st.title("Bienvenue dans l'application de Prédiction de Matchs")
-st.write("Vous êtes authentifié avec succès !")
+st.write("Vous êtes authentifié avec succès (abonnement valide).")
 st.markdown("""
 *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
 Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
 """)
 
-# ===================== RESTE DU CODE =====================
+# ===================== LE RESTE DE VOTRE CODE STREAMLIT =====================
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
 
@@ -77,7 +75,6 @@ API_URL_STANDINGS = 'https://v3.football.api-sports.io/standings'
 API_URL_ODDS = 'https://v3.football.api-sports.io/odds'
 API_URL_WEATHER = 'https://my.meteoblue.com/packages/basic-1h'
 
-# Headers pour l'API football
 headers = {
     'x-apisports-key': API_KEY,
     'x-apisports-host': 'v3.football.api-sports.io'
@@ -101,12 +98,12 @@ european_top_competitions = {
 response = requests.get(API_URL_LEAGUES, headers=headers)
 if response.status_code == 200:
     data_leagues = response.json().get('response', [])
-    all_countries = list(set([league['country']['name'] for league in data_leagues 
-                              if 'country' in league and league['country']['name'] is not None]))
+    all_countries = list(set([league['country']['name'] 
+                              for league in data_leagues 
+                              if 'country' in league and league['country']['name']]))
     all_countries.sort()
 
     if selected_continent == "Europe":
-        # On ajoute "International" en tête pour regrouper les compétitions UEFA
         all_countries = ["International"] + all_countries
     selected_country = st.selectbox("Sélectionnez un pays :", all_countries)
 else:
@@ -161,6 +158,7 @@ if league_id:
 else:
     match_id = None
 
+
 def get_team_form(team_id, n=5):
     form_params = {
         'team': team_id,
@@ -192,10 +190,7 @@ def get_team_form(team_id, n=5):
                     losses += 1
 
         total = wins + draws + losses
-        if total > 0:
-            form_score = wins / total
-        else:
-            form_score = 0.33
+        form_score = wins / total if total > 0 else 0.33
         return form_score
     else:
         return 0.33
@@ -322,13 +317,12 @@ def get_weather_factor(lat, lon, match_date):
         return 0.8
 
 # ===================== LOGIQUE DE MATCH / CALCULS =====================
-
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
 if league_id:
     if response_fixtures.status_code == 200:
-        # match_id déjà récupéré plus haut
+        # On a déjà récupéré la liste data_fixtures
         pass
     else:
         st.error("Impossible de récupérer les matchs.")
@@ -337,8 +331,8 @@ if match_id:
     st.session_state.match_id = match_id
 
 if st.session_state.match_id:
-    # On sélectionne la fixture en question
-    selected_fixture = next((f for f in data_fixtures if f['fixture']['id'] == st.session_state.match_id), None)
+    selected_fixture = next((f for f in data_fixtures 
+                             if f['fixture']['id'] == st.session_state.match_id), None)
     if selected_fixture:
         home_team_id = selected_fixture['teams']['home']['id']
         away_team_id = selected_fixture['teams']['away']['id']
@@ -391,20 +385,19 @@ if st.session_state.match_id:
         home_base = (
             home_form_score * weight_form +
             home_h2h_score * weight_h2h +
-            home_odds_prob * weight_odds +
-            weather_factor * weight_weather +
+            home_odds_prob  * weight_odds +
+            weather_factor  * weight_weather +
             home_injury_factor * weight_injury
         )
 
         away_base = (
             away_form_score * weight_form +
             away_h2h_score * weight_h2h +
-            away_odds_prob * weight_odds +
-            weather_factor * weight_weather +
+            away_odds_prob  * weight_odds +
+            weather_factor  * weight_weather +
             away_injury_factor * weight_injury
         )
 
-        # On calcule le draw_base principalement via les cotes du match nul + la météo
         draw_base = draw_odds_prob * 0.7 + weather_factor * 0.3
 
         total = home_base + away_base + draw_base
@@ -413,10 +406,8 @@ if st.session_state.match_id:
             draw_prob = draw_base / total
             away_prob = away_base / total
         else:
-            # fallback
             home_prob = draw_prob = away_prob = 1/3.0
 
-        # Affichage
         st.subheader("Probabilités estimées du résultat")
         st.write(f"- **{home_team_name} gagne :** {home_prob*100:.2f}%")
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
@@ -424,13 +415,14 @@ if st.session_state.match_id:
 
         st.markdown("---")
         st.markdown("""
-        **Important :** Les probabilités affichées ci-dessus sont générées grâce à un modèle complexe prenant en compte de multiples facteurs. 
-        Bien que notre algorithme soit conçu pour fournir les estimations les plus fiables possibles, le résultat d'un match reste influencé par de nombreux éléments imprévisibles.
-        
-        Notre outil vous offre un avantage analytique, mais ne constitue pas une garantie de résultats. Utilisez ces informations avec discernement.
+        **Important :** Les probabilités affichées ci-dessus sont générées grâce à un modèle complexe prenant 
+        en compte de multiples facteurs. Bien que notre algorithme soit conçu pour fournir les estimations 
+        les plus fiables possibles, le résultat d'un match reste influencé par de nombreux éléments imprévisibles.
+
+        Notre outil vous offre un avantage analytique, mais ne constitue pas une garantie de résultats. 
+        Utilisez ces informations avec discernement.
         """)
     else:
         st.info("Aucun détail de match disponible.")
 else:
-    # Aucune fixture sélectionnée
-    pass
+    pass  # Aucune fixture sélectionnée
