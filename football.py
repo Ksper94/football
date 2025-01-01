@@ -7,20 +7,13 @@ import datetime
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
-# Point d’entrée pour l'authentification
 NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon ton domaine
 
 # Initialiser les variables de session
 if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
+    st.session_state.authenticated = False  # Par défaut, non authentifié
 
-if 'just_logged_in' not in st.session_state:
-    st.session_state.just_logged_in = False
-
-if 'continue_clicked' not in st.session_state:
-    st.session_state.continue_clicked = False
-
-# ===================== FONCTION D'AUTHENTIFICATION ======================
+# Fonction pour gérer l'authentification via e-mail + mot de passe
 def handle_login(email, password):
     try:
         # Envoyer les identifiants au back-end
@@ -28,27 +21,23 @@ def handle_login(email, password):
         if resp.status_code == 200:
             data = resp.json()
             if data.get('success', False):
-                # Authentification réussie et abonnement actif
+                # Authentification réussie
                 st.session_state.authenticated = True
-                st.session_state.just_logged_in = True
                 st.success(data.get('message', "Authentification réussie !"))
             else:
                 # Problème d'identifiants ou abonnement inactif
                 st.error(data.get('message', "Impossible de s'authentifier."))
                 st.session_state.authenticated = False
-                st.session_state.just_logged_in = False
         else:
             # Erreur côté back-end
             st.error(f"Erreur API (code HTTP: {resp.status_code}).")
             st.session_state.authenticated = False
-            st.session_state.just_logged_in = False
     except Exception as e:
         st.error(f"Erreur lors de la tentative de login: {e}")
         st.session_state.authenticated = False
-        st.session_state.just_logged_in = False
 
 # ===================== FORMULAIRE DE LOGIN ======================
-if not st.session_state.authenticated and not st.session_state.continue_clicked:
+if not st.session_state.authenticated:
     st.title("Connexion à l'application")
 
     email = st.text_input("Email", value="", placeholder="Votre email")
@@ -59,24 +48,15 @@ if not st.session_state.authenticated and not st.session_state.continue_clicked:
             handle_login(email, password)
         else:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
-
-# ===================== MESSAGE DE LOGIN RÉUSSI ET BOUTON CONTINUER ======================
-if st.session_state.authenticated and st.session_state.just_logged_in and not st.session_state.continue_clicked:
-    st.success("Authentification réussie !")
-    st.write("Cliquez sur le bouton ci-dessous pour accéder à l'application.")
-
-    if st.button("Continuer"):
-        st.session_state.continue_clicked = True
-        st.session_state.just_logged_in = False  # Réinitialiser l'indicateur
+    st.stop()
 
 # ===================== CONTENU AUTHENTIFIÉ ======================
-if st.session_state.authenticated and st.session_state.continue_clicked:
-    st.title("Bienvenue dans l'application de Prédiction de Matchs")
-    st.write("Vous êtes authentifié avec succès (abonnement valide).")
-    st.markdown("""
-    *Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
-    Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
-    """)
+st.title("Bienvenue dans l'application de Prédiction de Matchs")
+st.write("Vous êtes authentifié avec succès (abonnement valide).")
+st.markdown("""
+*Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
+Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
+""")
 
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
