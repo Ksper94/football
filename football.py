@@ -8,7 +8,7 @@ st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
 
 # ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
 # Ce point d’entrée est censé vérifier (login+password) ET l’abonnement actif.
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter
 
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -24,15 +24,15 @@ def handle_login(email, password):
                 # Authentification OK + abonnement actif
                 st.session_state.authenticated = True
                 st.success(data.get('message', "Authentification réussie !"))
-                # Si l'endpoint renvoie un token JWT, on peut le stocker :
-                # st.session_state.jwt_token = data.get('token')
+                # Force la ré-exécution pour afficher immédiatement la suite
+                st.experimental_rerun()
             else:
                 # success=False => problème d'identifiants ou abonnement inactif
                 st.error(data.get('message', "Impossible de s'authentifier."))
                 st.session_state.authenticated = False
                 st.stop()
         else:
-            # Code HTTP != 200 => erreur back-end
+            # Code HTTP != 200 => erreur côté back-end
             st.error(f"Erreur API (code HTTP: {resp.status_code}).")
             st.session_state.authenticated = False
             st.stop()
@@ -53,6 +53,7 @@ if not st.session_state.authenticated:
             handle_login(email, password)
         else:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
+
     st.stop()
 
 # ===================== ICI : L'UTILISATEUR EST AUTHENTIFIÉ ======================
@@ -64,6 +65,8 @@ Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs
 """)
 
 # ===================== LE RESTE DE VOTRE CODE STREAMLIT =====================
+# ... Placez ici tout votre code supplémentaire : sélections, API calls, etc.
+
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
 
