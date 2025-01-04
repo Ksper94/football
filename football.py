@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 from datetime import date
 import matplotlib.pyplot as plt
+import sys
+print(sys.executable)
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽", layout="wide")
