@@ -226,36 +226,39 @@ def get_h2h_score(home_team_id, away_team_id):
         return 0.33, 0.33
 
 def get_odds_score(match_id):
-    odds_params = {
-        'fixture': match_id
-    }
+    odds_params = {'fixture': match_id}
     odds_resp = requests.get(API_URL_ODDS, headers=headers, params=odds_params)
     if odds_resp.status_code == 200:
         odds_data = odds_resp.json().get('response', [])
+        if not odds_data:
+            return 0.33, 0.33, 0.33
+
         home_odds_list = []
         draw_odds_list = []
         away_odds_list = []
+
         for book in odds_data:
             for bookmaker in book.get('bookmakers', []):
                 for bet in bookmaker.get('bets', []):
                     if bet['name'] == 'Match Winner':
-                        for odd in bet['values']:
-                            if odd['value'] == 'Home':
-                                home_odds_list.append(float(odd['odd']))
-                            elif odd['value'] == 'Draw':
-                                draw_odds_list.append(float(odd['odd']))
-                            elif odd['value'] == 'Away':
-                                away_odds_list.append(float(odd['odd']))
+                        for odd in bet.get('values', []):
+                            if 'value' in odd and 'odd' in odd:
+                                if odd['value'] == 'Home':
+                                    home_odds_list.append(float(odd['odd']))
+                                elif odd['value'] == 'Draw':
+                                    draw_odds_list.append(float(odd['odd']))
+                                elif odd['value'] == 'Away':
+                                    away_odds_list.append(float(odd['odd']))
 
         def avg_odd(lst):
-            return sum(lst)/len(lst) if lst else None
+            return sum(lst) / len(lst) if lst else None
 
-        avg_home_odd = avg_odd(home_odds_list)
-        avg_draw_odd = avg_odd(draw_odds_list)
-        avg_away_odd = avg_odd(away_odds_list)
+        avg_home_odd = avg_odd(home_odds_list) or 3.0
+        avg_draw_odd = avg_odd(draw_odds_list) or 3.0
+        avg_away_odd = avg_odd(away_odds_list) or 3.0
 
         def odd_to_prob(o):
-            return 1/o if (o and o > 0) else 0.33
+            return 1 / o if (o and o > 0) else 0.33
 
         home_prob = odd_to_prob(avg_home_odd)
         draw_prob = odd_to_prob(avg_draw_odd)
@@ -263,6 +266,7 @@ def get_odds_score(match_id):
         return home_prob, draw_prob, away_prob
     else:
         return 0.33, 0.33, 0.33
+
 
 def get_injury_factor(league_id, team_id):
     injuries_params = {
