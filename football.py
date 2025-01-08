@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import openai  # <-- Bibliothèque OpenAI
 from datetime import date
 import datetime
 
@@ -7,45 +8,86 @@ import datetime
 st.set_page_config(
     page_title="Prédictions de Matchs", 
     page_icon="⚽",
-    layout="centered"  # Centré pour une meilleure lisibilité (y compris sur mobile)
+    layout="centered"  
 )
+
+# ===================== CONFIG OPENAI (IA) ===============================
+# !! Clé à ne pas laisser en clair dans le code en production !!
+openai.api_key = "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"
+
+def generate_ai_analysis(
+    home_team_name, away_team_name,
+    home_prob, draw_prob, away_prob,
+    home_form_score, away_form_score,
+    home_h2h_score, away_h2h_score
+):
+    """
+    Génère un court texte de synthèse via OpenAI en se basant sur
+    quelques données : probas, forme, h2h...
+    """
+    prompt = f"""
+Écris un court commentaire en français sur le match suivant :
+- Équipe à domicile : {home_team_name} (probabilité de gagner : {home_prob*100:.1f}%)
+- Équipe à l'extérieur : {away_team_name} (probabilité de gagner : {away_prob*100:.1f}%)
+- Probabilité de match nul : {draw_prob*100:.1f}%
+- Forme récente de {home_team_name} : {home_form_score:.2f} (sur 1 max)
+- Forme récente de {away_team_name} : {away_form_score:.2f} (sur 1 max)
+- Historique des confrontations directes (H2H) : 
+    * {home_team_name} : {home_h2h_score:.2f}
+    * {away_team_name} : {away_h2h_score:.2f}
+
+Donne un petit paragraphe expliquant brièvement la situation et ce à quoi on peut s'attendre.
+Ne dépasse pas 80 mots environ.
+N'invente pas de statistiques supplémentaires.
+    """
+
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",  # ou "gpt-3.5-turbo-instruct" selon la version
+            prompt=prompt,
+            max_tokens=120,       # Limite de tokens (pour un court texte)
+            temperature=0.7,      # "créativité" du texte
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0
+        )
+        analysis_text = response.choices[0].text.strip()
+        return analysis_text
+    
+    except Exception as e:
+        # En cas d'erreur (ex: clé invalide, etc.)
+        st.error(f"Erreur lors de la génération du texte IA : {e}")
+        return None
 
 # ===================== STYLE SIMPLIFIÉ ==========================
 st.markdown("""
     <style>
-    /* Arrière-plan clair */
     .stApp {
-        background-color: #F9FAFB !important; /* Couleur très claire */
+        background-color: #F9FAFB !important; 
     }
-
-    /* Titre principal bien visible */
     .title {
-        color: #1D4ED8;  /* Bleu foncé pour un contraste suffisant */
+        color: #1D4ED8;
         font-size: 1.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
     }
-
-    /* Sous-titre */
     .subtitle {
-        color: #333333; /* Couleur sombre */
+        color: #333333;
         font-weight: 500;
         margin-top: 0;
         margin-bottom: 1rem;
     }
-
-    /* Séparateur (hr) simplifié */
     .hr-separator {
         border: none;
         height: 1px;
-        background-color: #D1D5DB; /* Gris clair */
+        background-color: #D1D5DB;
         margin: 1rem 0;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ===================== CONFIGURATION D'AUTHENTIFICATION =================
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter si besoin
+# ===================== CONFIG D'AUTHENTIFICATION =================
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
 
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -67,7 +109,7 @@ def handle_login(email, password):
     except Exception as e:
         st.error(f"Erreur lors de la tentative de login: {e}")
 
-# ===================== FORMULAIRE DE CONNEXION (SI NON AUTHENTIFIÉ) =====
+# ===================== FORMULAIRE DE CONNEXION ===================
 if not st.session_state.authenticated:
     st.markdown("<h2 class='title'>⚽ Connexion à l'application</h2>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Veuillez renseigner vos identifiants pour accéder aux prédictions.</p>", unsafe_allow_html=True)
@@ -82,7 +124,7 @@ if not st.session_state.authenticated:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
     st.stop()
 
-# ===================== CONTENU DE L'APPLICATION (SI AUTHENTIFIÉ) ========
+# ===================== CONTENU DE L'APPLICATION ==================
 st.markdown("<h2 class='title'>Bienvenue dans l'application de Prédiction de Matchs</h2>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Vous êtes authentifié avec succès (abonnement valide).</p>", unsafe_allow_html=True)
 
@@ -95,7 +137,7 @@ st.write(
 
 st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-# ===================== API CONFIGURATION ================================
+# ===================== API FOOTBALL ============================
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
 
@@ -111,7 +153,7 @@ headers = {
     'x-apisports-host': 'v3.football.api-sports.io'
 }
 
-# ===================== SÉLECTION DE LA DATE ==============================
+# ===================== SÉLECTION DE LA DATE ======================
 today = date.today()
 selected_date = st.date_input(
     "Sélectionnez une date (à partir d'aujourd'hui) :", 
@@ -144,17 +186,15 @@ if response.status_code == 200:
     all_countries.sort()
 
     if selected_continent == "Europe":
-        # On ajoute "International" en tête de liste
         all_countries = ["International"] + all_countries
 
     selected_country = st.selectbox("Sélectionnez un pays :", all_countries)
-
 else:
     st.error("Impossible de récupérer la liste des ligues.")
     selected_country = None
     data_leagues = []
 
-# ===================== CHOIX DE LA COMPÉTITION =========================
+# ===================== CHOIX DE LA COMPÉTITION ==================
 if selected_country:
     if selected_continent == "Europe" and selected_country == "International":
         comp_options = list(european_top_competitions.keys())
@@ -172,7 +212,7 @@ else:
     league_id = None
     league_info = None
 
-# ===================== LISTE DES MATCHS ===============================
+# ===================== LISTE DES MATCHS =========================
 if league_id:
     params_fixtures = {
         'league': league_id,
@@ -205,7 +245,7 @@ if league_id:
 else:
     match_id = None
 
-# ===================== FONCTIONS COMPLÉMENTAIRES ========================
+# ===================== FONCTIONS COMPLÉMENTAIRES =================
 def get_team_form(team_id, n=5):
     """Retourne la forme d’une équipe sur les n derniers matchs."""
     form_params = {'team': team_id, 'last': n}
@@ -346,7 +386,7 @@ def get_weather_factor(lat, lon, match_date):
         return max(0, 1 - rain * 0.1)
     return 0.8
 
-# ===================== AFFICHAGE FINAL DES PROBABILITÉS =================
+# =============== AFFICHAGE FINAL DES PROBABILITÉS + ANALYSE IA ==========
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
@@ -398,7 +438,6 @@ if st.session_state.match_id:
         lat, lon = geocode_city(fixture_city)
         weather_factor = get_weather_factor(lat, lon, selected_date)
 
-        # Pondérations
         weight_form = 0.3
         weight_h2h = 0.2
         weight_odds = 0.3
@@ -431,7 +470,6 @@ if st.session_state.match_id:
         else:
             home_prob = draw_prob = away_prob = 1/3
 
-        # Affichage
         st.subheader("Probabilités estimées du résultat :")
         st.write(f"- **{home_team_name} gagne :** {home_prob*100:.2f}%")
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
@@ -446,5 +484,20 @@ if st.session_state.match_id:
             "Notre outil vous donne un avantage analytique, **mais ne constitue pas une garantie**. "
             "Utilisez ces informations avec discernement."
         )
+
+        # =================== APPEL IA POUR TEXTE DE SYNTHÈSE ===================
+        st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
+        st.subheader("Analyse IA :")
+
+        analysis_text = generate_ai_analysis(
+            home_team_name, away_team_name,
+            home_prob, draw_prob, away_prob,
+            home_form_score, away_form_score,
+            home_h2h_score, away_h2h_score
+        )
+
+        if analysis_text:
+            st.write(analysis_text)
+
     else:
         st.info("Aucun détail de match disponible.")
