@@ -19,16 +19,13 @@ NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # Exemple, éventue
 openai.api_key = st.secrets["OPENAI_API_KEY"]  # Clé OpenAI
 
 # ===================== FONCTION GÉNÉRATION TEXTE IA ======================
+
 def generate_ai_analysis(
     home_team_name, away_team_name,
     home_prob, draw_prob, away_prob,
     home_form_score, away_form_score,
     home_h2h_score, away_h2h_score
 ):
-    """
-    Génère un court texte de synthèse via OpenAI en se basant sur
-    quelques données : probas, forme, h2h...
-    """
     prompt = f"""
 Écris un court commentaire en français sur le match suivant :
 - Équipe à domicile : {home_team_name} (probabilité de gagner : {home_prob*100:.1f}%)
@@ -46,18 +43,20 @@ N'invente pas de statistiques supplémentaires.
     """
 
     try:
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # ou "gpt-4" si ton compte y a accès
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=120,
             temperature=0.7,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0
         )
-        analysis_text = response.choices[0].text.strip()
+        # Le texte est maintenant dans choices[0].message.content
+        analysis_text = response.choices[0].message.content.strip()
         return analysis_text
-    
     except Exception as e:
         st.error(f"Erreur lors de la génération du texte IA : {e}")
         return None
