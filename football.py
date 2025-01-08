@@ -53,7 +53,7 @@ N'invente pas de statistiques supplémentaires.
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=120,
+            max_tokens=150,
             temperature=0.7,
             top_p=1,
             frequency_penalty=0,
@@ -498,7 +498,7 @@ if st.session_state.match_id:
 
         if analysis_text:
             st.write(analysis_text)
-            
+
         st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
         st.write(
             "**Important :** Les probabilités affichées ci-dessus sont générées "
