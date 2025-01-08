@@ -483,15 +483,7 @@ if st.session_state.match_id:
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
         st.write(f"- **{away_team_name} gagne :** {away_prob*100:.2f}%")
 
-        st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
-        st.write(
-            "**Important :** Les probabilités affichées ci-dessus sont générées "
-            "grâce à un modèle complexe tenant compte de multiples facteurs. "
-            "Bien que notre algorithme soit conçu pour fournir des estimations "
-            "fiables, le résultat d'un match reste soumis à de nombreux aléas.\n\n"
-            "Notre outil vous donne un avantage analytique, **mais ne constitue pas une garantie**. "
-            "Utilisez ces informations avec discernement."
-        )
+
 
         # =================== APPEL IA POUR TEXTE DE SYNTHÈSE ===================
         st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
@@ -506,6 +498,15 @@ if st.session_state.match_id:
 
         if analysis_text:
             st.write(analysis_text)
-
+            
+        st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
+        st.write(
+            "**Important :** Les probabilités affichées ci-dessus sont générées "
+            "grâce à un modèle complexe tenant compte de multiples facteurs. "
+            "Bien que notre algorithme soit conçu pour fournir des estimations "
+            "fiables, le résultat d'un match reste soumis à de nombreux aléas.\n\n"
+            "Notre outil vous donne un avantage analytique, **mais ne constitue pas une garantie**. "
+            "Utilisez ces informations avec discernement."
+        )
     else:
         st.info("Aucun détail de match disponible.")
