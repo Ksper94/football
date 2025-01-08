@@ -259,10 +259,12 @@ def get_team_form(team_id, n=5):
         return wins / total if total > 0 else 0.33
     return 0.33
 
+API_URL_FIXTURES_H2H = "https://v3.football.api-sports.io/fixtures/headtohead"
+
 def get_h2h_score(home_team_id, away_team_id):
     """Retourne la proportion de victoires domicile et extérieures sur l’historique H2H."""
-    h2h_params = {'h2h': f"{home_team_id}-{away_team_id}"}
-    resp = requests.get(API_URL_FIXTURES, headers=headers, params=h2h_params)
+    params = {'h2h': f"{home_team_id}-{away_team_id}"}
+    resp = requests.get(API_URL_FIXTURES_H2H, headers=headers, params=params)
     if resp.status_code == 200:
         h2h_data = resp.json().get('response', [])
         if not h2h_data:
@@ -286,7 +288,9 @@ def get_h2h_score(home_team_id, away_team_id):
         home_h2h_score = home_wins / total_matches
         away_h2h_score = away_wins / total_matches
         return home_h2h_score, away_h2h_score
+
     return 0.33, 0.33
+
 
 def get_odds_score(match_id):
     """Retourne la probabilité implicite (home, draw, away) selon les cotes des bookmakers."""
