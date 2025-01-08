@@ -1,20 +1,24 @@
 import streamlit as st
 import requests
-import openai  # <-- Bibliothèque OpenAI
+import openai
 from datetime import date
 import datetime
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(
-    page_title="Prédictions de Matchs", 
+    page_title="Prédictions de Matchs",
     page_icon="⚽",
-    layout="centered"  
+    layout="centered"
 )
 
-# ===================== CONFIG OPENAI (IA) ===============================
-# !! Clé à ne pas laisser en clair dans le code en production !!
-openai.api_key = "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"
+# ===================== RÉCUPÉRATION DES CLÉS (st.secrets) ===============
+#  - Les valeurs doivent être définies dans .streamlit/secrets.toml
+API_KEY = st.secrets["API_KEY"]
+WEATHER_API_KEY = st.secrets["WEATHER_API_KEY"]
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # Exemple, éventuellement récupéré de st.secrets
+openai.api_key = st.secrets["OPENAI_API_KEY"]  # Clé OpenAI
 
+# ===================== FONCTION GÉNÉRATION TEXTE IA ======================
 def generate_ai_analysis(
     home_team_name, away_team_name,
     home_prob, draw_prob, away_prob,
@@ -43,10 +47,10 @@ N'invente pas de statistiques supplémentaires.
 
     try:
         response = openai.Completion.create(
-            engine="text-davinci-003",  # ou "gpt-3.5-turbo-instruct" selon la version
+            engine="text-davinci-003",
             prompt=prompt,
-            max_tokens=120,       # Limite de tokens (pour un court texte)
-            temperature=0.7,      # "créativité" du texte
+            max_tokens=120,
+            temperature=0.7,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0
@@ -55,11 +59,10 @@ N'invente pas de statistiques supplémentaires.
         return analysis_text
     
     except Exception as e:
-        # En cas d'erreur (ex: clé invalide, etc.)
         st.error(f"Erreur lors de la génération du texte IA : {e}")
         return None
 
-# ===================== STYLE SIMPLIFIÉ ==========================
+# ===================== STYLE SIMPLIFIÉ ===========================
 st.markdown("""
     <style>
     .stApp {
@@ -86,9 +89,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ===================== CONFIG D'AUTHENTIFICATION =================
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
-
+# ===================== AUTHENTIFICATION ==========================
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
@@ -124,7 +125,7 @@ if not st.session_state.authenticated:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
     st.stop()
 
-# ===================== CONTENU DE L'APPLICATION ==================
+# ===================== PAGE PRINCIPALE ============================
 st.markdown("<h2 class='title'>Bienvenue dans l'application de Prédiction de Matchs</h2>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Vous êtes authentifié avec succès (abonnement valide).</p>", unsafe_allow_html=True)
 
@@ -134,13 +135,9 @@ st.write(
     "Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : "
     "_forme des équipes, historique des confrontations, cotes, météo, blessures, etc._"
 )
-
 st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-# ===================== API FOOTBALL ============================
-API_KEY = 'aa14874600855457b5a838ec894a06ae'
-WEATHER_API_KEY = 'mOpwoft03br5cj7z'
-
+# ===================== API FOOTBALL ==============================
 API_URL_LEAGUES = 'https://v3.football.api-sports.io/leagues'
 API_URL_FIXTURES = 'https://v3.football.api-sports.io/fixtures'
 API_URL_TEAMS = 'https://v3.football.api-sports.io/teams'
@@ -156,8 +153,8 @@ headers = {
 # ===================== SÉLECTION DE LA DATE ======================
 today = date.today()
 selected_date = st.date_input(
-    "Sélectionnez une date (à partir d'aujourd'hui) :", 
-    min_value=today, 
+    "Sélectionnez une date (à partir d'aujourd'hui) :",
+    min_value=today,
     value=today
 )
 
@@ -186,6 +183,7 @@ if response.status_code == 200:
     all_countries.sort()
 
     if selected_continent == "Europe":
+        # On ajoute "International" pour les compétitions type Champions League
         all_countries = ["International"] + all_countries
 
     selected_country = st.selectbox("Sélectionnez un pays :", all_countries)
@@ -232,7 +230,7 @@ if league_id:
         
         if match_list:
             selected_match_str = st.selectbox(
-                "Sélectionnez un match :", 
+                "Sélectionnez un match :",
                 [m[0] for m in match_list]
             )
             match_id = next((m[1] for m in match_list if m[0] == selected_match_str), None)
@@ -247,7 +245,7 @@ else:
 
 # ===================== FONCTIONS COMPLÉMENTAIRES =================
 def get_team_form(team_id, n=5):
-    """Retourne la forme d’une équipe sur les n derniers matchs."""
+    """Retourne la forme d’une équipe sur les n derniers matchs (0 à 1)."""
     form_params = {'team': team_id, 'last': n}
     resp = requests.get(API_URL_FIXTURES, headers=headers, params=form_params)
     if resp.status_code == 200:
@@ -285,6 +283,7 @@ def get_h2h_score(home_team_id, away_team_id):
     if resp.status_code == 200:
         h2h_data = resp.json().get('response', [])
         if not h2h_data:
+            # Pas de match H2H : on renvoie un score neutre
             return 0.33, 0.33
         total_matches = len(h2h_data)
         home_wins, away_wins, draws = 0, 0, 0
@@ -293,6 +292,7 @@ def get_h2h_score(home_team_id, away_team_id):
             ag = m['goals']['away']
             h_id = m['teams']['home']['id']
             a_id = m['teams']['away']['id']
+
             if hg == ag:
                 draws += 1
             elif (h_id == home_team_id and hg > ag) or (a_id == home_team_id and ag > hg):
@@ -306,7 +306,7 @@ def get_h2h_score(home_team_id, away_team_id):
     return 0.33, 0.33
 
 def get_odds_score(match_id):
-    """Retourne la probabilité implicite (home, draw, away) selon les cotes."""
+    """Retourne la probabilité implicite (home, draw, away) selon les cotes des bookmakers."""
     odds_params = {'fixture': match_id}
     resp = requests.get(API_URL_ODDS, headers=headers, params=odds_params)
     if resp.status_code == 200:
@@ -382,11 +382,12 @@ def get_weather_factor(lat, lon, match_date):
     resp = requests.get(API_URL_WEATHER, params=weather_params)
     if resp.status_code == 200:
         weather_data = resp.json()
+        # Simplification : si 'rain' existe, on applique un malus
         rain = weather_data.get('rain', 0)
         return max(0, 1 - rain * 0.1)
     return 0.8
 
-# =============== AFFICHAGE FINAL DES PROBABILITÉS + ANALYSE IA ==========
+# =========== AFFICHAGE FINAL DES PROBABILITÉS + ANALYSE IA ===========
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
@@ -405,7 +406,7 @@ if st.session_state.match_id:
         away_team_logo = selected_fixture['teams']['away']['logo']
         fixture_city = selected_fixture['fixture']['venue']['city']
 
-        # Logo de la compétition
+        # Logo de la compétition (si dispo)
         if league_info and 'league' in league_info and 'logo' in league_info['league']:
             st.image(league_info['league']['logo'], width=80)
 
@@ -426,7 +427,7 @@ if st.session_state.match_id:
 
         st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-        # Calculs
+        # Calculs divers
         home_form_score = get_team_form(home_team_id, n=5)
         away_form_score = get_team_form(away_team_id, n=5)
 
@@ -438,6 +439,7 @@ if st.session_state.match_id:
         lat, lon = geocode_city(fixture_city)
         weather_factor = get_weather_factor(lat, lon, selected_date)
 
+        # Pondérations ajustables
         weight_form = 0.3
         weight_h2h = 0.2
         weight_odds = 0.3
@@ -460,6 +462,7 @@ if st.session_state.match_id:
             away_injury_factor * weight_injury
         )
 
+        # On estime la probabilité d’un nul
         draw_base = draw_odds_prob * 0.7 + weather_factor * 0.3
 
         total = home_base + away_base + draw_base
