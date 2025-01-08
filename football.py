@@ -13,9 +13,12 @@ st.set_page_config(
 
 # ===================== CLÉS SECRÈTES ====================================
 # Récupération des clés depuis Streamlit Cloud (ou .streamlit/secrets.toml)
-API_KEY = st.secrets["API_KEY"]
-WEATHER_API_KEY = st.secrets["WEATHER_API_KEY"]
-OPENAI_KEY = st.secrets["OPENAI_API_KEY"]
+
+API_KEY = st.secrets["API"]["API_KEY"]
+WEATHER_API_KEY = st.secrets["API"]["WEATHER_API_KEY"]
+OPENAI_KEY = st.secrets["OPENAI"]["OPENAI_API_KEY"]
+NEXTJS_CHECK_SUB_URL = st.secrets["NEXTJS"]["NEXTJS_CHECK_SUB_URL"]
+JWT_SECRET = st.secrets["JWT"]["JWT_SECRET"]
 
 # Instanciation du client typed OpenAI
 client = OpenAI(api_key=OPENAI_KEY)
