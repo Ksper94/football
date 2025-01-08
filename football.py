@@ -7,46 +7,51 @@ import datetime
 st.set_page_config(
     page_title="Prédictions de Matchs", 
     page_icon="⚽",
-    layout="centered"
+    layout="centered"  # Centré pour une meilleure lisibilité (y compris sur mobile)
 )
 
-# ===================== STYLE PERSONNALISÉ ===============================
-# (facultatif) : un peu de CSS pour customiser l'arrière-plan et les titres
+# ===================== STYLE SIMPLIFIÉ ==========================
 st.markdown("""
     <style>
-    /* Arrière-plan de la page */
+    /* Arrière-plan clair */
     .stApp {
-        background: linear-gradient(135deg, #F3F6FA 25%, #FFFFFF 100%);
+        background-color: #F9FAFB !important; /* Couleur très claire */
     }
-    /* Titres et sous-titres plus esthétiques */
+
+    /* Titre principal bien visible */
     .title {
-        color: #1D4ED8;
+        color: #1D4ED8;  /* Bleu foncé pour un contraste suffisant */
+        font-size: 1.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
     }
+
+    /* Sous-titre */
     .subtitle {
-        color: #374151;
+        color: #333333; /* Couleur sombre */
         font-weight: 500;
         margin-top: 0;
+        margin-bottom: 1rem;
     }
+
+    /* Séparateur (hr) simplifié */
     .hr-separator {
-        border: 0;
+        border: none;
         height: 1px;
-        background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(17,106,177,0.75), rgba(0,0,0,0));
+        background-color: #D1D5DB; /* Gris clair */
         margin: 1rem 0;
     }
     </style>
 """, unsafe_allow_html=True)
 
-
-# ===================== CONFIGURATIONS D'AUTHENTIFICATION ================
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
+# ===================== CONFIGURATION D'AUTHENTIFICATION =================
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter si besoin
 
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 def handle_login(email, password):
-    """Envoie les identifiants au backend pour authentifier l'utilisateur."""
+    """Envoie les identifiants au backend pour authentifier l’utilisateur."""
     try:
         resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
@@ -62,8 +67,8 @@ def handle_login(email, password):
     except Exception as e:
         st.error(f"Erreur lors de la tentative de login: {e}")
 
+# ===================== FORMULAIRE DE CONNEXION (SI NON AUTHENTIFIÉ) =====
 if not st.session_state.authenticated:
-    # ===================== FORMULAIRE DE CONNEXION =======================
     st.markdown("<h2 class='title'>⚽ Connexion à l'application</h2>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Veuillez renseigner vos identifiants pour accéder aux prédictions.</p>", unsafe_allow_html=True)
 
@@ -77,20 +82,18 @@ if not st.session_state.authenticated:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
     st.stop()
 
-# ===================== CONTENU DE L'APPLICATION ==========================
+# ===================== CONTENU DE L'APPLICATION (SI AUTHENTIFIÉ) ========
 st.markdown("<h2 class='title'>Bienvenue dans l'application de Prédiction de Matchs</h2>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Vous êtes authentifié avec succès (abonnement valide).</p>", unsafe_allow_html=True)
 
-st.markdown("""
-<div style="margin-top:1rem; margin-bottom:1rem;">
-    <strong>Bienvenue</strong> dans notre outil de prédiction de matchs de football. 
-    Sélectionnez une date, un continent, un pays, puis une compétition.
-    <br/><br/>
-    Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : 
-    <em>forme des équipes, historique des confrontations, cotes, météo, blessures, etc.</em>
-</div>
-<hr class="hr-separator"/>
-""", unsafe_allow_html=True)
+st.write(
+    "Bienvenue dans notre outil de prédiction de matchs de football. "
+    "Sélectionnez une date, un continent, un pays, puis une compétition.\n\n"
+    "Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : "
+    "_forme des équipes, historique des confrontations, cotes, météo, blessures, etc._"
+)
+
+st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
 # ===================== API CONFIGURATION ================================
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
@@ -108,21 +111,22 @@ headers = {
     'x-apisports-host': 'v3.football.api-sports.io'
 }
 
-# ===================== SÉLECTION DE LA DATE & LOCALISATION ==============
+# ===================== SÉLECTION DE LA DATE ==============================
 today = date.today()
-selected_date = st.date_input("Sélectionnez une date (à partir d'aujourd'hui):", min_value=today, value=today)
+selected_date = st.date_input(
+    "Sélectionnez une date (à partir d'aujourd'hui) :", 
+    min_value=today, 
+    value=today
+)
 
 # Calcul de la saison
-if selected_date.month < 8:  
-    season_year = selected_date.year - 1
-else:
-    season_year = selected_date.year
+season_year = selected_date.year - 1 if selected_date.month < 8 else selected_date.year
 
 # Sélection du continent
 continents = ["Europe", "South America", "North America", "Asia", "Africa"]
 selected_continent = st.selectbox("Sélectionnez un continent :", continents)
 
-# Leagues
+# Leagues pour l'Europe
 european_top_competitions = {
     "UEFA Champions League": 2,
     "UEFA Europa League": 3,
@@ -132,15 +136,19 @@ european_top_competitions = {
 response = requests.get(API_URL_LEAGUES, headers=headers)
 if response.status_code == 200:
     data_leagues = response.json().get('response', [])
-    all_countries = list(set(
-        [league['country']['name'] for league in data_leagues 
-         if 'country' in league and league['country']['name']]
-    ))
+    all_countries = list({
+        league['country']['name']
+        for league in data_leagues 
+        if league.get('country', {}).get('name')
+    })
     all_countries.sort()
 
     if selected_continent == "Europe":
+        # On ajoute "International" en tête de liste
         all_countries = ["International"] + all_countries
+
     selected_country = st.selectbox("Sélectionnez un pays :", all_countries)
+
 else:
     st.error("Impossible de récupérer la liste des ligues.")
     selected_country = None
@@ -154,9 +162,8 @@ if selected_country:
         league_id = european_top_competitions[selected_league_name]
         league_info = next((l for l in data_leagues if l['league']['id'] == league_id), None)
     else:
-        leagues_in_country = [league for league in data_leagues if league['country']['name'] == selected_country]
-        league_names = [l['league']['name'] for l in leagues_in_country]
-        league_names.sort()
+        leagues_in_country = [l for l in data_leagues if l['country']['name'] == selected_country]
+        league_names = sorted([l['league']['name'] for l in leagues_in_country])
         selected_league_name = st.selectbox("Sélectionnez une compétition :", league_names)
         selected_league = next((l for l in leagues_in_country if l['league']['name'] == selected_league_name), None)
         league_id = selected_league['league']['id'] if selected_league else None
@@ -184,7 +191,10 @@ if league_id:
             match_list.append((match_str, fixture_id))
         
         if match_list:
-            selected_match_str = st.selectbox("Sélectionnez un match :", [m[0] for m in match_list])
+            selected_match_str = st.selectbox(
+                "Sélectionnez un match :", 
+                [m[0] for m in match_list]
+            )
             match_id = next((m[1] for m in match_list if m[0] == selected_match_str), None)
         else:
             st.info("Aucun match trouvé pour la date et la compétition sélectionnées.")
@@ -195,19 +205,20 @@ if league_id:
 else:
     match_id = None
 
-# ===================== FONCTIONS SUPPLÉMENTAIRES ========================
+# ===================== FONCTIONS COMPLÉMENTAIRES ========================
 def get_team_form(team_id, n=5):
+    """Retourne la forme d’une équipe sur les n derniers matchs."""
     form_params = {'team': team_id, 'last': n}
-    form_resp = requests.get(API_URL_FIXTURES, headers=headers, params=form_params)
-    if form_resp.status_code == 200:
-        form_data = form_resp.json().get('response', [])
+    resp = requests.get(API_URL_FIXTURES, headers=headers, params=form_params)
+    if resp.status_code == 200:
+        form_data = resp.json().get('response', [])
         wins, draws, losses = 0, 0, 0
         for m in form_data:
-            hg = m['goals'].get('home') if m['goals'].get('home') is not None else 0
-            ag = m['goals'].get('away') if m['goals'].get('away') is not None else 0
+            hg = m['goals'].get('home') or 0
+            ag = m['goals'].get('away') or 0
             h_id = m['teams']['home']['id']
             a_id = m['teams']['away']['id']
-            
+
             if h_id == team_id:
                 if hg > ag:
                     wins += 1
@@ -224,17 +235,16 @@ def get_team_form(team_id, n=5):
                     losses += 1
 
         total = wins + draws + losses
-        form_score = wins / total if total > 0 else 0.33
-        return form_score
-    else:
-        return 0.33
+        return wins / total if total > 0 else 0.33
+    return 0.33
 
 def get_h2h_score(home_team_id, away_team_id):
+    """Retourne la proportion de victoires domicile et extérieures sur l’historique H2H."""
     h2h_params = {'h2h': f"{home_team_id}-{away_team_id}"}
-    h2h_resp = requests.get(API_URL_FIXTURES, headers=headers, params=h2h_params)
-    if h2h_resp.status_code == 200:
-        h2h_data = h2h_resp.json().get('response', [])
-        if len(h2h_data) == 0:
+    resp = requests.get(API_URL_FIXTURES, headers=headers, params=h2h_params)
+    if resp.status_code == 200:
+        h2h_data = resp.json().get('response', [])
+        if not h2h_data:
             return 0.33, 0.33
         total_matches = len(h2h_data)
         home_wins, away_wins, draws = 0, 0, 0
@@ -249,21 +259,22 @@ def get_h2h_score(home_team_id, away_team_id):
                 home_wins += 1
             else:
                 away_wins += 1
+
         home_h2h_score = home_wins / total_matches
         away_h2h_score = away_wins / total_matches
         return home_h2h_score, away_h2h_score
-    else:
-        return 0.33, 0.33
+    return 0.33, 0.33
 
 def get_odds_score(match_id):
+    """Retourne la probabilité implicite (home, draw, away) selon les cotes."""
     odds_params = {'fixture': match_id}
-    odds_resp = requests.get(API_URL_ODDS, headers=headers, params=odds_params)
-    if odds_resp.status_code == 200:
-        odds_data = odds_resp.json().get('response', [])
+    resp = requests.get(API_URL_ODDS, headers=headers, params=odds_params)
+    if resp.status_code == 200:
+        odds_data = resp.json().get('response', [])
         if not odds_data:
             return 0.33, 0.33, 0.33
 
-        home_odds_list, draw_odds_list, away_odds_list = [], [], []
+        home_odds, draw_odds, away_odds = [], [], []
         for book in odds_data:
             for bookmaker in book.get('bookmakers', []):
                 for bet in bookmaker.get('bets', []):
@@ -271,51 +282,44 @@ def get_odds_score(match_id):
                         for odd in bet.get('values', []):
                             if 'value' in odd and 'odd' in odd:
                                 if odd['value'] == 'Home':
-                                    home_odds_list.append(float(odd['odd']))
+                                    home_odds.append(float(odd['odd']))
                                 elif odd['value'] == 'Draw':
-                                    draw_odds_list.append(float(odd['odd']))
+                                    draw_odds.append(float(odd['odd']))
                                 elif odd['value'] == 'Away':
-                                    away_odds_list.append(float(odd['odd']))
+                                    away_odds.append(float(odd['odd']))
 
         def avg_odd(lst):
             return sum(lst) / len(lst) if lst else None
 
-        avg_home_odd = avg_odd(home_odds_list) or 3.0
-        avg_draw_odd = avg_odd(draw_odds_list) or 3.0
-        avg_away_odd = avg_odd(away_odds_list) or 3.0
+        avg_home = avg_odd(home_odds) or 3.0
+        avg_draw = avg_odd(draw_odds) or 3.0
+        avg_away = avg_odd(away_odds) or 3.0
 
         def odd_to_prob(o):
             return 1 / o if (o and o > 0) else 0.33
 
-        home_prob = odd_to_prob(avg_home_odd)
-        draw_prob = odd_to_prob(avg_draw_odd)
-        away_prob = odd_to_prob(avg_away_odd)
-        return home_prob, draw_prob, away_prob
-    else:
-        return 0.33, 0.33, 0.33
+        return odd_to_prob(avg_home), odd_to_prob(avg_draw), odd_to_prob(avg_away)
+    return 0.33, 0.33, 0.33
 
 def get_injury_factor(league_id, team_id):
+    """Réduit la forme de l’équipe en fonction du nombre de blessés."""
     injuries_params = {
         'league': league_id,
         'season': datetime.datetime.now().year,
         'team': team_id
     }
-    injuries_resp = requests.get('https://v3.football.api-sports.io/injuries', headers=headers, params=injuries_params)
-    if injuries_resp.status_code == 200:
-        injuries_data = injuries_resp.json().get('response', [])
+    resp = requests.get('https://v3.football.api-sports.io/injuries', headers=headers, params=injuries_params)
+    if resp.status_code == 200:
+        injuries_data = resp.json().get('response', [])
         count = len(injuries_data)
         return max(0, 1 - count * 0.05)
-    else:
-        return 0.9
+    return 0.9
 
 def geocode_city(city_name):
+    """Retourne la latitude/longitude d’une ville."""
     url = "https://nominatim.openstreetmap.org/search"
-    params = {
-        'q': city_name,
-        'format': 'json',
-        'limit': 1
-    }
-    headers_geo = {'User-Agent': 'MyFootballApp/1.0'} 
+    params = {'q': city_name, 'format': 'json', 'limit': 1}
+    headers_geo = {'User-Agent': 'MyFootballApp/1.0'}
     resp = requests.get(url, params=params, headers=headers_geo)
     if resp.status_code == 200:
         data = resp.json()
@@ -326,6 +330,7 @@ def geocode_city(city_name):
     return None, None
 
 def get_weather_factor(lat, lon, match_date):
+    """Renvoie un facteur météo (ex: 0.8 si pluie, 1.0 si temps clair)."""
     if lat is None or lon is None:
         return 0.8
     weather_params = {
@@ -334,24 +339,19 @@ def get_weather_factor(lat, lon, match_date):
         'apikey': WEATHER_API_KEY,
         'format': 'json'
     }
-    weather_resp = requests.get(API_URL_WEATHER, params=weather_params)
-    if weather_resp.status_code == 200:
-        weather_data = weather_resp.json()
-        # Hypothèse : s'il y a de la pluie, on pénalise un peu la qualité
+    resp = requests.get(API_URL_WEATHER, params=weather_params)
+    if resp.status_code == 200:
+        weather_data = resp.json()
         rain = weather_data.get('rain', 0)
         return max(0, 1 - rain * 0.1)
-    else:
-        return 0.8
+    return 0.8
 
-# ===================== CALCUL ET AFFICHAGE DES PROBABILITÉS =============
+# ===================== AFFICHAGE FINAL DES PROBABILITÉS =================
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
 if league_id and match_id:
     st.session_state.match_id = match_id
-
-if 'data_fixtures' not in locals():
-    data_fixtures = []
 
 if st.session_state.match_id:
     selected_fixture = next((f for f in data_fixtures 
@@ -369,7 +369,7 @@ if st.session_state.match_id:
         if league_info and 'league' in league_info and 'logo' in league_info['league']:
             st.image(league_info['league']['logo'], width=80)
 
-        st.markdown(f"## {selected_league_name}")
+        st.write(f"### {selected_league_name}")
         st.write(f"**Date du match :** {selected_date.strftime('%d %B %Y')}")
 
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -378,7 +378,7 @@ if st.session_state.match_id:
             st.write(f"**{home_team_name}**")
 
         with col2:
-            st.markdown("<h2 style='text-align: center;'>VS</h2>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align:center;'>VS</h3>", unsafe_allow_html=True)
 
         with col3:
             st.image(away_team_logo, width=80)
@@ -386,9 +386,10 @@ if st.session_state.match_id:
 
         st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-        # Calcul scores
+        # Calculs
         home_form_score = get_team_form(home_team_id, n=5)
         away_form_score = get_team_form(away_team_id, n=5)
+
         home_h2h_score, away_h2h_score = get_h2h_score(home_team_id, away_team_id)
         home_odds_prob, draw_odds_prob, away_odds_prob = get_odds_score(st.session_state.match_id)
         home_injury_factor = get_injury_factor(league_id, home_team_id)
@@ -411,6 +412,7 @@ if st.session_state.match_id:
             weather_factor * weight_weather +
             home_injury_factor * weight_injury
         )
+
         away_base = (
             away_form_score * weight_form +
             away_h2h_score * weight_h2h +
@@ -418,6 +420,7 @@ if st.session_state.match_id:
             weather_factor * weight_weather +
             away_injury_factor * weight_injury
         )
+
         draw_base = draw_odds_prob * 0.7 + weather_factor * 0.3
 
         total = home_base + away_base + draw_base
@@ -426,23 +429,22 @@ if st.session_state.match_id:
             draw_prob = draw_base / total
             away_prob = away_base / total
         else:
-            home_prob = draw_prob = away_prob = 1 / 3.0
+            home_prob = draw_prob = away_prob = 1/3
 
+        # Affichage
         st.subheader("Probabilités estimées du résultat :")
         st.write(f"- **{home_team_name} gagne :** {home_prob*100:.2f}%")
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
         st.write(f"- **{away_team_name} gagne :** {away_prob*100:.2f}%")
 
         st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
-
-        st.markdown("""
-        **Important :** Les probabilités affichées ci-dessus sont générées grâce à 
-        un modèle complexe tenant compte de multiples facteurs. Bien que notre 
-        algorithme soit conçu pour fournir des estimations fiables, le résultat 
-        d'un match reste soumis à de nombreux aléas.  
-        \n
-        Notre outil vous donne un avantage analytique, **mais ne constitue pas une garantie**. 
-        Utilisez ces informations avec discernement.
-        """)
+        st.write(
+            "**Important :** Les probabilités affichées ci-dessus sont générées "
+            "grâce à un modèle complexe tenant compte de multiples facteurs. "
+            "Bien que notre algorithme soit conçu pour fournir des estimations "
+            "fiables, le résultat d'un match reste soumis à de nombreux aléas.\n\n"
+            "Notre outil vous donne un avantage analytique, **mais ne constitue pas une garantie**. "
+            "Utilisez ces informations avec discernement."
+        )
     else:
         st.info("Aucun détail de match disponible.")
