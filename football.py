@@ -4,39 +4,68 @@ from datetime import date
 import datetime
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
-st.set_page_config(page_title="Prédictions de Matchs", page_icon="⚽")
+st.set_page_config(
+    page_title="Prédictions de Matchs", 
+    page_icon="⚽",
+    layout="centered"
+)
 
-# ===================== CONFIGURATIONS D'AUTHENTIFICATION =================
+# ===================== STYLE PERSONNALISÉ ===============================
+# (facultatif) : un peu de CSS pour customiser l'arrière-plan et les titres
+st.markdown("""
+    <style>
+    /* Arrière-plan de la page */
+    .stApp {
+        background: linear-gradient(135deg, #F3F6FA 25%, #FFFFFF 100%);
+    }
+    /* Titres et sous-titres plus esthétiques */
+    .title {
+        color: #1D4ED8;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .subtitle {
+        color: #374151;
+        font-weight: 500;
+        margin-top: 0;
+    }
+    .hr-separator {
+        border: 0;
+        height: 1px;
+        background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(17,106,177,0.75), rgba(0,0,0,0));
+        margin: 1rem 0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+# ===================== CONFIGURATIONS D'AUTHENTIFICATION ================
 NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # À adapter selon votre domaine
 
-# Initialisation de l'état de la session pour l'authentification
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
-# Fonction pour gérer l'authentification via e-mail + mot de passe
 def handle_login(email, password):
+    """Envoie les identifiants au backend pour authentifier l'utilisateur."""
     try:
-        # Envoi des identifiants au backend
         resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
             data = resp.json()
             if data.get('success', False):
-                # Authentification réussie
                 st.session_state.authenticated = True
                 st.success(data.get('message', "Authentification réussie !"))
-                st.rerun()  # Recharge l'application pour afficher le contenu protégé
+                st.experimental_rerun()
             else:
-                # Échec de l'authentification (mauvais identifiants ou abonnement expiré)
                 st.error(data.get('message', "Impossible de s'authentifier."))
         else:
-            # Erreur côté backend
             st.error(f"Erreur API (code HTTP: {resp.status_code}).")
     except Exception as e:
         st.error(f"Erreur lors de la tentative de login: {e}")
 
-# Affichage du formulaire de connexion si non authentifié
 if not st.session_state.authenticated:
-    st.title("Connexion à l'application")
+    # ===================== FORMULAIRE DE CONNEXION =======================
+    st.markdown("<h2 class='title'>⚽ Connexion à l'application</h2>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Veuillez renseigner vos identifiants pour accéder aux prédictions.</p>", unsafe_allow_html=True)
 
     email = st.text_input("Email")
     password = st.text_input("Mot de passe", type="password")
@@ -49,18 +78,24 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ===================== CONTENU DE L'APPLICATION ==========================
-st.title("Bienvenue dans l'application de Prédiction de Matchs")
-st.write("Vous êtes authentifié avec succès (abonnement valide).")
-st.markdown("""
-*Bienvenue dans notre outil de prédiction de matchs de football. Sélectionnez une date, un continent, un pays, puis une compétition.
-Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : forme des équipes, historique des confrontations, cotes, météo, blessures, etc.*  
-""")
+st.markdown("<h2 class='title'>Bienvenue dans l'application de Prédiction de Matchs</h2>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>Vous êtes authentifié avec succès (abonnement valide).</p>", unsafe_allow_html=True)
 
-# ===================== API CONFIGURATION ==========================
+st.markdown("""
+<div style="margin-top:1rem; margin-bottom:1rem;">
+    <strong>Bienvenue</strong> dans notre outil de prédiction de matchs de football. 
+    Sélectionnez une date, un continent, un pays, puis une compétition.
+    <br/><br/>
+    Notre algorithme calcule les probabilités en tenant compte de nombreux facteurs : 
+    <em>forme des équipes, historique des confrontations, cotes, météo, blessures, etc.</em>
+</div>
+<hr class="hr-separator"/>
+""", unsafe_allow_html=True)
+
+# ===================== API CONFIGURATION ================================
 API_KEY = 'aa14874600855457b5a838ec894a06ae'
 WEATHER_API_KEY = 'mOpwoft03br5cj7z'
 
-# URLs de base pour l'API Football
 API_URL_LEAGUES = 'https://v3.football.api-sports.io/leagues'
 API_URL_FIXTURES = 'https://v3.football.api-sports.io/fixtures'
 API_URL_TEAMS = 'https://v3.football.api-sports.io/teams'
@@ -73,22 +108,21 @@ headers = {
     'x-apisports-host': 'v3.football.api-sports.io'
 }
 
-# Sélection de la date
+# ===================== SÉLECTION DE LA DATE & LOCALISATION ==============
 today = date.today()
 selected_date = st.date_input("Sélectionnez une date (à partir d'aujourd'hui):", min_value=today, value=today)
 
-# Détermination de la saison basée sur la date sélectionnée
-# Supposons que la saison commence en août et finit en mai de l'année suivante
-if selected_date.month < 8:  # Si avant août, c'est la saison précédente
+# Calcul de la saison
+if selected_date.month < 8:  
     season_year = selected_date.year - 1
 else:
     season_year = selected_date.year
 
-# Continents
+# Sélection du continent
 continents = ["Europe", "South America", "North America", "Asia", "Africa"]
 selected_continent = st.selectbox("Sélectionnez un continent :", continents)
 
-# Liste de grandes compétitions européennes (IDs à adapter)
+# Leagues
 european_top_competitions = {
     "UEFA Champions League": 2,
     "UEFA Europa League": 3,
@@ -98,9 +132,10 @@ european_top_competitions = {
 response = requests.get(API_URL_LEAGUES, headers=headers)
 if response.status_code == 200:
     data_leagues = response.json().get('response', [])
-    all_countries = list(set([league['country']['name'] 
-                              for league in data_leagues 
-                              if 'country' in league and league['country']['name']]))
+    all_countries = list(set(
+        [league['country']['name'] for league in data_leagues 
+         if 'country' in league and league['country']['name']]
+    ))
     all_countries.sort()
 
     if selected_continent == "Europe":
@@ -111,6 +146,7 @@ else:
     selected_country = None
     data_leagues = []
 
+# ===================== CHOIX DE LA COMPÉTITION =========================
 if selected_country:
     if selected_continent == "Europe" and selected_country == "International":
         comp_options = list(european_top_competitions.keys())
@@ -128,10 +164,12 @@ if selected_country:
 else:
     league_id = None
     league_info = None
+
+# ===================== LISTE DES MATCHS ===============================
 if league_id:
     params_fixtures = {
         'league': league_id,
-        'season': season_year,  # Utilisation de la saison calculée
+        'season': season_year,
         'date': selected_date.strftime('%Y-%m-%d')
     }
     response_fixtures = requests.get(API_URL_FIXTURES, headers=headers, params=params_fixtures)
@@ -157,13 +195,9 @@ if league_id:
 else:
     match_id = None
 
-# ===================== FONCTIONS SUPPLÉMENTAIRES =========================
-
+# ===================== FONCTIONS SUPPLÉMENTAIRES ========================
 def get_team_form(team_id, n=5):
-    form_params = {
-        'team': team_id,
-        'last': n
-    }
+    form_params = {'team': team_id, 'last': n}
     form_resp = requests.get(API_URL_FIXTURES, headers=headers, params=form_params)
     if form_resp.status_code == 200:
         form_data = form_resp.json().get('response', [])
@@ -196,18 +230,14 @@ def get_team_form(team_id, n=5):
         return 0.33
 
 def get_h2h_score(home_team_id, away_team_id):
-    h2h_params = {
-        'h2h': f"{home_team_id}-{away_team_id}"
-    }
+    h2h_params = {'h2h': f"{home_team_id}-{away_team_id}"}
     h2h_resp = requests.get(API_URL_FIXTURES, headers=headers, params=h2h_params)
     if h2h_resp.status_code == 200:
         h2h_data = h2h_resp.json().get('response', [])
         if len(h2h_data) == 0:
             return 0.33, 0.33
         total_matches = len(h2h_data)
-        home_wins = 0
-        away_wins = 0
-        draws = 0
+        home_wins, away_wins, draws = 0, 0, 0
         for m in h2h_data:
             hg = m['goals']['home']
             ag = m['goals']['away']
@@ -233,10 +263,7 @@ def get_odds_score(match_id):
         if not odds_data:
             return 0.33, 0.33, 0.33
 
-        home_odds_list = []
-        draw_odds_list = []
-        away_odds_list = []
-
+        home_odds_list, draw_odds_list, away_odds_list = [], [], []
         for book in odds_data:
             for bookmaker in book.get('bookmakers', []):
                 for bet in bookmaker.get('bets', []):
@@ -266,6 +293,7 @@ def get_odds_score(match_id):
         return home_prob, draw_prob, away_prob
     else:
         return 0.33, 0.33, 0.33
+
 def get_injury_factor(league_id, team_id):
     injuries_params = {
         'league': league_id,
@@ -276,9 +304,7 @@ def get_injury_factor(league_id, team_id):
     if injuries_resp.status_code == 200:
         injuries_data = injuries_resp.json().get('response', [])
         count = len(injuries_data)
-        # Hypothèse : chaque blessure réduit un peu la "forme" de l'équipe
-        injury_factor = max(0, 1 - count * 0.05)
-        return injury_factor
+        return max(0, 1 - count * 0.05)
     else:
         return 0.9
 
@@ -311,26 +337,21 @@ def get_weather_factor(lat, lon, match_date):
     weather_resp = requests.get(API_URL_WEATHER, params=weather_params)
     if weather_resp.status_code == 200:
         weather_data = weather_resp.json()
-        # Hypothèse : s'il y a de la pluie, on pénalise un peu la qualité du match
+        # Hypothèse : s'il y a de la pluie, on pénalise un peu la qualité
         rain = weather_data.get('rain', 0)
-        weather_factor = max(0, 1 - rain * 0.1)
-        return weather_factor
+        return max(0, 1 - rain * 0.1)
     else:
         return 0.8
 
-# ===================== LOGIQUE DE MATCH / CALCULS =====================
+# ===================== CALCUL ET AFFICHAGE DES PROBABILITÉS =============
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
-if league_id:
-    if response_fixtures.status_code == 200:
-        # On a déjà récupéré la liste data_fixtures
-        pass
-    else:
-        st.error("Impossible de récupérer les matchs.")
-
-if match_id:
+if league_id and match_id:
     st.session_state.match_id = match_id
+
+if 'data_fixtures' not in locals():
+    data_fixtures = []
 
 if st.session_state.match_id:
     selected_fixture = next((f for f in data_fixtures 
@@ -344,11 +365,11 @@ if st.session_state.match_id:
         away_team_logo = selected_fixture['teams']['away']['logo']
         fixture_city = selected_fixture['fixture']['venue']['city']
 
-        # Affichage du logo de la compétition si dispo
+        # Logo de la compétition
         if league_info and 'league' in league_info and 'logo' in league_info['league']:
             st.image(league_info['league']['logo'], width=80)
-        
-        st.markdown(f"### {selected_league_name}")
+
+        st.markdown(f"## {selected_league_name}")
         st.write(f"**Date du match :** {selected_date.strftime('%d %B %Y')}")
 
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -363,12 +384,11 @@ if st.session_state.match_id:
             st.image(away_team_logo, width=80)
             st.write(f"**{away_team_name}**")
 
-        st.markdown("---")
+        st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-        # Calcul des différents scores
+        # Calcul scores
         home_form_score = get_team_form(home_team_id, n=5)
         away_form_score = get_team_form(away_team_id, n=5)
-
         home_h2h_score, away_h2h_score = get_h2h_score(home_team_id, away_team_id)
         home_odds_prob, draw_odds_prob, away_odds_prob = get_odds_score(st.session_state.match_id)
         home_injury_factor = get_injury_factor(league_id, home_team_id)
@@ -387,19 +407,17 @@ if st.session_state.match_id:
         home_base = (
             home_form_score * weight_form +
             home_h2h_score * weight_h2h +
-            home_odds_prob  * weight_odds +
-            weather_factor  * weight_weather +
+            home_odds_prob * weight_odds +
+            weather_factor * weight_weather +
             home_injury_factor * weight_injury
         )
-
         away_base = (
             away_form_score * weight_form +
             away_h2h_score * weight_h2h +
-            away_odds_prob  * weight_odds +
-            weather_factor  * weight_weather +
+            away_odds_prob * weight_odds +
+            weather_factor * weight_weather +
             away_injury_factor * weight_injury
         )
-
         draw_base = draw_odds_prob * 0.7 + weather_factor * 0.3
 
         total = home_base + away_base + draw_base
@@ -410,18 +428,20 @@ if st.session_state.match_id:
         else:
             home_prob = draw_prob = away_prob = 1 / 3.0
 
-        st.subheader("Probabilités estimées du résultat")
+        st.subheader("Probabilités estimées du résultat :")
         st.write(f"- **{home_team_name} gagne :** {home_prob*100:.2f}%")
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
         st.write(f"- **{away_team_name} gagne :** {away_prob*100:.2f}%")
 
-        st.markdown("---")
-        st.markdown("""
-        **Important :** Les probabilités affichées ci-dessus sont générées grâce à un modèle complexe prenant 
-        en compte de multiples facteurs. Bien que notre algorithme soit conçu pour fournir les estimations 
-        les plus fiables possibles, le résultat d'un match reste influencé par de nombreux éléments imprévisibles.
+        st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-        Notre outil vous offre un avantage analytique, mais ne constitue pas une garantie de résultats. 
+        st.markdown("""
+        **Important :** Les probabilités affichées ci-dessus sont générées grâce à 
+        un modèle complexe tenant compte de multiples facteurs. Bien que notre 
+        algorithme soit conçu pour fournir des estimations fiables, le résultat 
+        d'un match reste soumis à de nombreux aléas.  
+        \n
+        Notre outil vous donne un avantage analytique, **mais ne constitue pas une garantie**. 
         Utilisez ces informations avec discernement.
         """)
     else:
