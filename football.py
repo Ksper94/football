@@ -1,9 +1,8 @@
 import streamlit as st
 import requests
-import openai
+from openai import OpenAI  # <-- Nouvel import
 from datetime import date
 import datetime
-from openai import OpenAI
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(
@@ -12,21 +11,26 @@ st.set_page_config(
     layout="centered"
 )
 
-# ===================== RÉCUPÉRATION DES CLÉS (st.secrets) ===============
-#  - Les valeurs doivent être définies dans .streamlit/secrets.toml
+# ===================== CLÉS SECRÈTES ====================================
+# Récupération des clés depuis Streamlit Cloud (ou .streamlit/secrets.toml)
 API_KEY = st.secrets["API_KEY"]
 WEATHER_API_KEY = st.secrets["WEATHER_API_KEY"]
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"  # Exemple, éventuellement récupéré de st.secrets
-openai.api_key = st.secrets["OPENAI_API_KEY"]  # Clé OpenAI
+OPENAI_KEY = st.secrets["OPENAI_API_KEY"]
 
-# ===================== FONCTION GÉNÉRATION TEXTE IA ======================
+# Instanciation du client typed OpenAI
+client = OpenAI(api_key=OPENAI_KEY)
 
+# ===================== FONCTION GÉNÉRATION TEXTE IA (NOUVELLE API) ======
 def generate_ai_analysis(
     home_team_name, away_team_name,
     home_prob, draw_prob, away_prob,
     home_form_score, away_form_score,
     home_h2h_score, away_h2h_score
 ):
+    """
+    Génère un court texte de synthèse via la nouvelle interface 
+    client.chat.completions.create().
+    """
     prompt = f"""
 Écris un court commentaire en français sur le match suivant :
 - Équipe à domicile : {home_team_name} (probabilité de gagner : {home_prob*100:.1f}%)
@@ -44,8 +48,8 @@ N'invente pas de statistiques supplémentaires.
     """
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # ou "gpt-4" si ton compte y a accès
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",  # ou "gpt-4", "gpt-4o", etc. selon ton accès
             messages=[
                 {"role": "user", "content": prompt}
             ],
@@ -55,9 +59,10 @@ N'invente pas de statistiques supplémentaires.
             frequency_penalty=0,
             presence_penalty=0
         )
-        # Le texte est maintenant dans choices[0].message.content
-        analysis_text = response.choices[0].message.content.strip()
+        # On récupère le texte
+        analysis_text = completion.choices[0].message.content.strip()
         return analysis_text
+
     except Exception as e:
         st.error(f"Erreur lors de la génération du texte IA : {e}")
         return None
@@ -90,11 +95,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ===================== AUTHENTIFICATION ==========================
+NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
+
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 def handle_login(email, password):
-    """Envoie les identifiants au backend pour authentifier l’utilisateur."""
+    """Exemple d’appel à ton backend NextJS pour login."""
     try:
         resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
         if resp.status_code == 200:
@@ -387,7 +394,7 @@ def get_weather_factor(lat, lon, match_date):
         return max(0, 1 - rain * 0.1)
     return 0.8
 
-# =========== AFFICHAGE FINAL DES PROBABILITÉS + ANALYSE IA ===========
+# ===================== AFFICHAGE FINAL ===========================
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
@@ -462,9 +469,7 @@ if st.session_state.match_id:
             away_injury_factor * weight_injury
         )
 
-        # On estime la probabilité d’un nul
         draw_base = draw_odds_prob * 0.7 + weather_factor * 0.3
-
         total = home_base + away_base + draw_base
         if total > 0:
             home_prob = home_base / total
