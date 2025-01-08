@@ -68,19 +68,25 @@ N'invente pas de statistiques supplémentaires.
         return None
 
 # ===================== STYLE SIMPLIFIÉ ===========================
+
 st.markdown("""
     <style>
+    /* Force la couleur du texte en noir */
+    body, .stApp, .stApp * {
+        color: #000000 !important;
+    }
+    /* Force l'arrière-plan en clair */
     .stApp {
         background-color: #F9FAFB !important; 
     }
     .title {
-        color: #1D4ED8;
+        color: #1D4ED8 !important;
         font-size: 1.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
     }
     .subtitle {
-        color: #333333;
+        color: #333333 !important;
         font-weight: 500;
         margin-top: 0;
         margin-bottom: 1rem;
