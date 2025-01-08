@@ -3,6 +3,7 @@ import requests
 import openai
 from datetime import date
 import datetime
+from openai import OpenAI
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(
