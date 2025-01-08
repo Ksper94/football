@@ -59,7 +59,7 @@ def handle_login(email, password):
             if data.get('success', False):
                 st.session_state.authenticated = True
                 st.success(data.get('message', "Authentification réussie !"))
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error(data.get('message', "Impossible de s'authentifier."))
         else:
