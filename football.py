@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from openai import OpenAI  # <-- Nouvel import
+from openai import OpenAI
 from datetime import date
 import datetime
 
@@ -11,19 +11,59 @@ st.set_page_config(
     layout="centered"
 )
 
-# ===================== CLÉS SECRÈTES ====================================
-# Récupération des clés depuis Streamlit Cloud (ou .streamlit/secrets.toml)
-
+# ===================== CLÉS SECRÈTES =====================================
 API_KEY = st.secrets["API"]["API_KEY"]
 WEATHER_API_KEY = st.secrets["API"]["WEATHER_API_KEY"]
 OPENAI_KEY = st.secrets["OPENAI"]["OPENAI_API_KEY"]
 NEXTJS_CHECK_SUB_URL = st.secrets["NEXTJS"]["NEXTJS_CHECK_SUB_URL"]
 JWT_SECRET = st.secrets["JWT"]["JWT_SECRET"]
 
-# Instanciation du client typed OpenAI
 client = OpenAI(api_key=OPENAI_KEY)
 
-# ===================== FONCTION GÉNÉRATION TEXTE IA (NOUVELLE API) ======
+# ===================== MAPPING PAYS “PHARES” PAR CONTINENT ====================
+def reorder_countries(continent, all_countries):
+    """
+    Réordonne les pays pour mettre en premier ceux considérés comme “phares”
+    dans le foot (par continent), puis le reste en ordre alphabétique.
+    """
+    top_countries_by_continent = {
+        "Europe": [
+            "France", "England", "Spain", "Italy", "Germany", 
+            "Portugal", "Netherlands", "Belgium", "Turkey"
+        ],
+        "South America": ["Brazil", "Argentina", "Colombia", "Uruguay", "Chile"],
+        "North America": ["United States", "Mexico", "Canada"],
+        "Asia": ["Japan", "South Korea", "Saudi Arabia"],
+        "Africa": ["Egypt", "Senegal", "Morocco", "Tunisia", "Algeria"]
+    }
+    
+    top_countries = top_countries_by_continent.get(continent, [])
+    top_list = [c for c in top_countries if c in all_countries]  # pays phares présents
+    remaining = [c for c in all_countries if c not in top_list]
+    remaining.sort()  # tri alphabétique du reste
+    return top_list + remaining
+
+# ===================== MAPPING D1 (COMPÉTITIONS PHARES) PAR PAYS ============
+top_leagues_names = {
+    "France": ["Ligue 1"],
+    "England": ["Premier League"],
+    "Spain": ["La Liga", "Primera Division"],
+    "Italy": ["Serie A"],
+    "Germany": ["Bundesliga"],
+    "Portugal": ["Primeira Liga"],
+    "Netherlands": ["Eredivisie"],
+    "Belgium": ["Jupiler Pro League"],
+    "Turkey": ["Süper Lig"],
+
+    # Exemple pour d'autres continents
+    "Brazil": ["Serie A"],
+    "Argentina": ["Liga Profesional Argentina", "Primera Division"],
+    "Mexico": ["Liga MX"],
+    "United States": ["MLS"],
+    # etc.
+}
+
+# ===================== FONCTION GÉNÉRATION TEXTE IA =======================
 def generate_ai_analysis(
     home_team_name, away_team_name,
     home_prob, draw_prob, away_prob,
@@ -52,17 +92,14 @@ N'invente pas de statistiques supplémentaires.
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # ou "gpt-4", "gpt-4o", etc. selon ton accès
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
             temperature=0.7,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0
         )
-        # On récupère le texte
         analysis_text = completion.choices[0].message.content.strip()
         return analysis_text
 
@@ -70,7 +107,7 @@ N'invente pas de statistiques supplémentaires.
         st.error(f"Erreur lors de la génération du texte IA : {e}")
         return None
 
-# ===================== AUTHENTIFICATION ==========================
+# ===================== AUTHENTIFICATION ===========================
 NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
 
 if 'authenticated' not in st.session_state:
@@ -120,7 +157,7 @@ st.write(
 )
 st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
 
-# ===================== API FOOTBALL ==============================
+# ===================== API FOOTBALL ===============================
 API_URL_LEAGUES = 'https://v3.football.api-sports.io/leagues'
 API_URL_FIXTURES = 'https://v3.football.api-sports.io/fixtures'
 API_URL_TEAMS = 'https://v3.football.api-sports.io/teams'
@@ -133,7 +170,7 @@ headers = {
     'x-apisports-host': 'v3.football.api-sports.io'
 }
 
-# ===================== SÉLECTION DE LA DATE ======================
+# ===================== SÉLECTION DE LA DATE =======================
 today = date.today()
 selected_date = st.date_input(
     "Sélectionnez une date (à partir d'aujourd'hui) :",
@@ -144,56 +181,88 @@ selected_date = st.date_input(
 # Calcul de la saison
 season_year = selected_date.year - 1 if selected_date.month < 8 else selected_date.year
 
-# Sélection du continent
+# ===================== SÉLECTION DU CONTINENT =====================
 continents = ["Europe", "South America", "North America", "Asia", "Africa"]
 selected_continent = st.selectbox("Sélectionnez un continent :", continents)
 
-# Leagues pour l'Europe
+# ===================== GRANDES COMPÉTITIONS EUROPÉENNES ===========
 european_top_competitions = {
     "UEFA Champions League": 2,
     "UEFA Europa League": 3,
     "UEFA Europa Conference League": 848
 }
 
+# ===================== RÉCUPERATION DE TOUTES LES LIGUES ==========
 response = requests.get(API_URL_LEAGUES, headers=headers)
 if response.status_code == 200:
     data_leagues = response.json().get('response', [])
+    
+    # Extraction de tous les pays
     all_countries = list({
         league['country']['name']
         for league in data_leagues 
         if league.get('country', {}).get('name')
     })
-    all_countries.sort()
-
+    
+    # On réordonne les pays en fonction du continent sélectionné
+    all_countries = reorder_countries(selected_continent, all_countries)
+    
+    # Si le continent est l'Europe, on ajoute "International" en tête 
+    # pour la Champions League, Europa League, etc.
     if selected_continent == "Europe":
-        # On ajoute "International" pour les compétitions type Champions League
-        all_countries = ["International"] + all_countries
-
+        if "International" not in all_countries:
+            all_countries = ["International"] + all_countries
+    
+    # Sélection du pays
     selected_country = st.selectbox("Sélectionnez un pays :", all_countries)
+
 else:
     st.error("Impossible de récupérer la liste des ligues.")
     selected_country = None
     data_leagues = []
 
-# ===================== CHOIX DE LA COMPÉTITION ==================
+# ===================== CHOIX DE LA COMPÉTITION ====================
+league_id = None
+league_info = None
+
 if selected_country:
+    # Cas spécial "International" (ex: LDC, Europa, etc.)
     if selected_continent == "Europe" and selected_country == "International":
         comp_options = list(european_top_competitions.keys())
         selected_league_name = st.selectbox("Sélectionnez une grande compétition européenne :", comp_options)
         league_id = european_top_competitions[selected_league_name]
         league_info = next((l for l in data_leagues if l['league']['id'] == league_id), None)
     else:
-        leagues_in_country = [l for l in data_leagues if l['country']['name'] == selected_country]
-        league_names = sorted([l['league']['name'] for l in leagues_in_country])
+        # Récupération de toutes les ligues pour le pays sélectionné
+        leagues_in_country = [
+            l for l in data_leagues 
+            if l['country']['name'] == selected_country
+        ]
+        
+        # On va toutes les garder, mais on place la/les D1 en premier
+        # 1) Tri alphabétique
+        leagues_in_country_sorted = sorted(leagues_in_country, key=lambda x: x['league']['name'])
+        
+        # 2) Identifie celles considérées comme "D1"
+        d1_names = top_leagues_names.get(selected_country, [])
+        top_leagues_in_country = [l for l in leagues_in_country_sorted if l['league']['name'] in d1_names]
+        other_leagues_in_country = [l for l in leagues_in_country_sorted if l['league']['name'] not in d1_names]
+        
+        # 3) Fusionne : d'abord la D1, puis le reste
+        reordered_leagues = top_leagues_in_country + other_leagues_in_country
+        
+        # 4) Liste des noms à afficher
+        league_names = [l['league']['name'] for l in reordered_leagues]
+        
+        # 5) Sélection via selectbox (la/les D1 apparaîtront en premier)
         selected_league_name = st.selectbox("Sélectionnez une compétition :", league_names)
-        selected_league = next((l for l in leagues_in_country if l['league']['name'] == selected_league_name), None)
+        
+        # 6) Récupère la ligue choisie
+        selected_league = next((l for l in reordered_leagues if l['league']['name'] == selected_league_name), None)
         league_id = selected_league['league']['id'] if selected_league else None
         league_info = selected_league
-else:
-    league_id = None
-    league_info = None
 
-# ===================== LISTE DES MATCHS =========================
+# ===================== LISTE DES MATCHS ===========================
 if league_id:
     params_fixtures = {
         'league': league_id,
@@ -268,7 +337,6 @@ def get_h2h_score(home_team_id, away_team_id):
     if resp.status_code == 200:
         h2h_data = resp.json().get('response', [])
         if not h2h_data:
-            # Pas de match H2H : on renvoie un score neutre
             return 0.33, 0.33
         total_matches = len(h2h_data)
         home_wins, away_wins, draws = 0, 0, 0
@@ -290,7 +358,6 @@ def get_h2h_score(home_team_id, away_team_id):
         return home_h2h_score, away_h2h_score
 
     return 0.33, 0.33
-
 
 def get_odds_score(match_id):
     """Retourne la probabilité implicite (home, draw, away) selon les cotes des bookmakers."""
@@ -374,7 +441,7 @@ def get_weather_factor(lat, lon, match_date):
         return max(0, 1 - rain * 0.1)
     return 0.8
 
-# ===================== AFFICHAGE FINAL ===========================
+# ===================== AFFICHAGE FINAL ============================
 if 'match_id' not in st.session_state:
     st.session_state.match_id = None
 
@@ -382,8 +449,10 @@ if league_id and match_id:
     st.session_state.match_id = match_id
 
 if st.session_state.match_id:
-    selected_fixture = next((f for f in data_fixtures 
-                             if f['fixture']['id'] == st.session_state.match_id), None)
+    selected_fixture = next(
+        (f for f in data_fixtures if f['fixture']['id'] == st.session_state.match_id), 
+        None
+    )
     if selected_fixture:
         home_team_id = selected_fixture['teams']['home']['id']
         away_team_id = selected_fixture['teams']['away']['id']
@@ -462,8 +531,6 @@ if st.session_state.match_id:
         st.write(f"- **{home_team_name} gagne :** {home_prob*100:.2f}%")
         st.write(f"- **Match nul :** {draw_prob*100:.2f}%")
         st.write(f"- **{away_team_name} gagne :** {away_prob*100:.2f}%")
-
-
 
         # =================== APPEL IA POUR TEXTE DE SYNTHÈSE ===================
         st.markdown("<hr class='hr-separator'/>", unsafe_allow_html=True)
