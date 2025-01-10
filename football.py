@@ -18,6 +18,9 @@ OPENAI_KEY = st.secrets["OPENAI"]["OPENAI_API_KEY"]
 NEXTJS_CHECK_SUB_URL = st.secrets["NEXTJS"]["NEXTJS_CHECK_SUB_URL"]
 JWT_SECRET = st.secrets["JWT"]["JWT_SECRET"]
 
+# <-- Ajout de la clé PositionStack -->
+POSITIONSTACK_API_KEY = st.secrets["API"]["POSITIONSTACK_API_KEY"]
+
 client = OpenAI(api_key=OPENAI_KEY)
 
 # ===================== MAPPING PAYS “PHARES” PAR CONTINENT ====================
@@ -40,7 +43,7 @@ def reorder_countries(continent, all_countries):
     top_countries = top_countries_by_continent.get(continent, [])
     top_list = [c for c in top_countries if c in all_countries]  # pays phares présents
     remaining = [c for c in all_countries if c not in top_list]
-    remaining.sort()  # tri alphabétique du reste
+    remaining.sort()
     return top_list + remaining
 
 # ===================== MAPPING D1 (COMPÉTITIONS PHARES) PAR PAYS ============
@@ -55,7 +58,6 @@ top_leagues_names = {
     "Belgium": ["Jupiler Pro League"],
     "Turkey": ["Süper Lig"],
 
-    # Exemple pour d'autres continents
     "Brazil": ["Serie A"],
     "Argentina": ["Liga Profesional Argentina", "Primera Division"],
     "Mexico": ["Liga MX"],
@@ -71,8 +73,7 @@ def generate_ai_analysis(
     home_h2h_score, away_h2h_score
 ):
     """
-    Génère un court texte de synthèse via la nouvelle interface 
-    client.chat.completions.create().
+    Génère un court texte de synthèse via l’API OpenAI (ChatGPT).
     """
     prompt = f"""
 Écris un court commentaire en français sur le match suivant :
@@ -208,7 +209,6 @@ if response.status_code == 200:
     all_countries = reorder_countries(selected_continent, all_countries)
     
     # Si le continent est l'Europe, on ajoute "International" en tête 
-    # pour la Champions League, Europa League, etc.
     if selected_continent == "Europe":
         if "International" not in all_countries:
             all_countries = ["International"] + all_countries
@@ -226,7 +226,6 @@ league_id = None
 league_info = None
 
 if selected_country:
-    # Cas spécial "International" (ex: LDC, Europa, etc.)
     if selected_continent == "Europe" and selected_country == "International":
         comp_options = list(european_top_competitions.keys())
         selected_league_name = st.selectbox("Sélectionnez une grande compétition européenne :", comp_options)
@@ -239,25 +238,22 @@ if selected_country:
             if l['country']['name'] == selected_country
         ]
         
-        # On va toutes les garder, mais on place la/les D1 en premier
-        # 1) Tri alphabétique
+        # Tri alphabétique
         leagues_in_country_sorted = sorted(leagues_in_country, key=lambda x: x['league']['name'])
         
-        # 2) Identifie celles considérées comme "D1"
+        # Identifie celles considérées comme "D1"
         d1_names = top_leagues_names.get(selected_country, [])
         top_leagues_in_country = [l for l in leagues_in_country_sorted if l['league']['name'] in d1_names]
         other_leagues_in_country = [l for l in leagues_in_country_sorted if l['league']['name'] not in d1_names]
         
-        # 3) Fusionne : d'abord la D1, puis le reste
+        # Fusionne : d'abord la D1, puis le reste
         reordered_leagues = top_leagues_in_country + other_leagues_in_country
         
-        # 4) Liste des noms à afficher
+        # Liste des noms à afficher
         league_names = [l['league']['name'] for l in reordered_leagues]
         
-        # 5) Sélection via selectbox (la/les D1 apparaîtront en premier)
         selected_league_name = st.selectbox("Sélectionnez une compétition :", league_names)
         
-        # 6) Récupère la ligue choisie
         selected_league = next((l for l in reordered_leagues if l['league']['name'] == selected_league_name), None)
         league_id = selected_league['league']['id'] if selected_league else None
         league_info = selected_league
@@ -409,19 +405,35 @@ def get_injury_factor(league_id, team_id):
         return max(0, 1 - count * 0.05)
     return 0.9
 
+# ===================== NOUVELLE FONCTION GEO AVEC POSITIONSTACK =============
 def geocode_city(city_name):
-    """Retourne la latitude/longitude d’une ville."""
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {'q': city_name, 'format': 'json', 'limit': 1}
-    headers_geo = {'User-Agent': 'MyFootballApp/1.0'}
-    resp = requests.get(url, params=params, headers=headers_geo)
-    if resp.status_code == 200:
+    """
+    Géocode un nom de ville via l'API PositionStack.
+    Retourne (lat, lon) ou (None, None) en cas d'échec.
+    """
+    base_url = "http://api.positionstack.com/v1/forward"
+    params = {
+        "access_key": POSITIONSTACK_API_KEY,
+        "query": city_name,
+        "limit": 1
+    }
+    try:
+        resp = requests.get(base_url, params=params, timeout=10)
+        resp.raise_for_status()  # génère une exception si code HTTP != 200
         data = resp.json()
-        if data:
-            lat = float(data[0]['lat'])
-            lon = float(data[0]['lon'])
-            return lat, lon
-    return None, None
+        
+        if "data" in data and len(data["data"]) > 0:
+            first_result = data["data"][0]
+            lat = first_result.get("latitude")
+            lon = first_result.get("longitude")
+            if lat is not None and lon is not None:
+                return float(lat), float(lon)
+        # Si pas de résultat, on renvoie None
+        return None, None
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"Erreur lors de la requête PositionStack : {e}")
+        return None, None
 
 def get_weather_factor(lat, lon, match_date):
     """Renvoie un facteur météo (ex: 0.8 si pluie, 1.0 si temps clair)."""
@@ -492,7 +504,7 @@ if st.session_state.match_id:
         home_injury_factor = get_injury_factor(league_id, home_team_id)
         away_injury_factor = get_injury_factor(league_id, away_team_id)
 
-        lat, lon = geocode_city(fixture_city)
+        lat, lon = geocode_city(fixture_city)  # <-- Utilise la nouvelle fonction PositionStack
         weather_factor = get_weather_factor(lat, lon, selected_date)
 
         # Pondérations ajustables
