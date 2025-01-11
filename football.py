@@ -130,10 +130,18 @@ def authenticate_user(email, password):
         return None
 
 def get_user_creation_date(user):
+    """
+    Récupère la date de création du compte utilisateur.
+    Retourne un objet datetime en UTC.
+    """
     try:
-        created_at_str = user.created_at  # Format : '2023-01-01T00:00:00.000Z'
-        created_at = datetime.strptime(created_at_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        created_at = created_at.replace(tzinfo=pytz.UTC)
+        created_at = user.created_at  # Déjà un objet datetime.datetime
+        if created_at.tzinfo is None:
+            # Si l'objet datetime n'a pas de timezone, on le définit sur UTC
+            created_at = created_at.replace(tzinfo=pytz.UTC)
+        else:
+            # Sinon, on convertit l'heure en UTC
+            created_at = created_at.astimezone(pytz.UTC)
         return created_at
     except Exception as e:
         st.error(f"Erreur lors de la récupération de la date de création : {e}")
