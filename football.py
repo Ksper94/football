@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 import pytz
 from openai import OpenAI  # Assurez-vous que OpenAI est installé : pip install openai
 import requests
-import date
+from datetime import date
+import datetime
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(
