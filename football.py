@@ -236,6 +236,7 @@ def login():
                         else:
                             st.error("Votre période d'essai est expirée et vous n'avez pas d'abonnement actif.")
                             st.session_state.authenticated = False
+                st.rerun()
         else:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
 
