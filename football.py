@@ -556,7 +556,7 @@ def get_injury_factor(league_id, team_id):
     """Réduit la forme de l’équipe en fonction du nombre de blessés."""
     injuries_params = {
         'league': league_id,
-        'season': datetime.datetime.now().year,
+        'season': datetime.now().year,  # Correction ici
         'team': team_id
     }
     resp = requests.get('https://v3.football.api-sports.io/injuries', headers=headers, params=injuries_params)
@@ -565,6 +565,7 @@ def get_injury_factor(league_id, team_id):
         count = len(injuries_data)
         return max(0, 1 - count * 0.05)
     return 0.9
+
 
 # ===================== NOUVELLE FONCTION GEO AVEC POSITIONSTACK =============
 def geocode_city(city_name):
