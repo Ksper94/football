@@ -117,7 +117,11 @@ def authenticate_user(email, password):
     Retourne l'objet utilisateur si authentifié, sinon None.
     """
     try:
-        response = supabase.auth.sign_in_with_password(email=email, password=password)
+        credentials = {
+            "email": email,
+            "password": password
+        }
+        response = supabase.auth.sign_in_with_password(credentials)
         user = response.user
         if user:
             return user
