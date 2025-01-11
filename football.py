@@ -1,13 +1,10 @@
 # app.py
-
+from datetime import datetime, date, timedelta
+import pytz
 import streamlit as st
 from supabase_config import supabase
-from datetime import datetime, timedelta
-import pytz
 from openai import OpenAI  # Assurez-vous que OpenAI est installé : pip install openai
 import requests
-from datetime import date
-import datetime
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(
@@ -133,10 +130,6 @@ def authenticate_user(email, password):
         return None
 
 def get_user_creation_date(user):
-    """
-    Récupère la date de création du compte utilisateur.
-    Retourne un objet datetime en UTC.
-    """
     try:
         created_at_str = user.created_at  # Format : '2023-01-01T00:00:00.000Z'
         created_at = datetime.strptime(created_at_str, "%Y-%m-%dT%H:%M:%S.%fZ")
