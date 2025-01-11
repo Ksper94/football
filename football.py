@@ -1,8 +1,12 @@
+# app.py
+
 import streamlit as st
+from supabase_config import supabase
+from datetime import datetime, timedelta
+import pytz
+from openai import OpenAI  # Assurez-vous que OpenAI est installé : pip install openai
 import requests
-from openai import OpenAI
-from datetime import date
-import datetime
+import date
 
 # ===================== CONFIGURATION DE LA PAGE ==========================
 st.set_page_config(
@@ -12,15 +16,12 @@ st.set_page_config(
 )
 
 # ===================== CLÉS SECRÈTES =====================================
-API_KEY = st.secrets["API"]["API_KEY"]
-WEATHER_API_KEY = st.secrets["API"]["WEATHER_API_KEY"]
-OPENAI_KEY = st.secrets["OPENAI"]["OPENAI_API_KEY"]
-NEXTJS_CHECK_SUB_URL = st.secrets["NEXTJS"]["NEXTJS_CHECK_SUB_URL"]
-JWT_SECRET = st.secrets["JWT"]["JWT_SECRET"]
+API_KEY = st.secrets["API_KEY"]
+WEATHER_API_KEY = st.secrets["WEATHER_API_KEY"]
+OPENAI_KEY = st.secrets["OPENAI_API_KEY"]
+POSITIONSTACK_API_KEY = st.secrets["POSITIONSTACK_API_KEY"]
 
-# <-- Ajout de la clé PositionStack -->
-POSITIONSTACK_API_KEY = st.secrets["API"]["POSITIONSTACK_API_KEY"]
-
+# ===================== INITIALISATION DE L'IA ===========================
 client = OpenAI(api_key=OPENAI_KEY)
 
 # ===================== MAPPING PAYS “PHARES” PAR CONTINENT ====================
@@ -108,43 +109,196 @@ N'invente pas de statistiques supplémentaires.
         st.error(f"Erreur lors de la génération du texte IA : {e}")
         return None
 
-# ===================== AUTHENTIFICATION ===========================
-NEXTJS_LOGIN_URL = "https://foot-predictions.com/api/login"
-
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-
-def handle_login(email, password):
-    """Exemple d’appel à ton backend NextJS pour login."""
+# ===================== FONCTIONS D'AUTHENTIFICATION ET VÉRIFICATION ===========================
+def authenticate_user(email, password):
+    """
+    Authentifie l'utilisateur via Supabase.
+    Retourne l'objet utilisateur si authentifié, sinon None.
+    """
     try:
-        resp = requests.post(NEXTJS_LOGIN_URL, json={"email": email, "password": password})
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get('success', False):
-                st.session_state.authenticated = True
-                st.success(data.get('message', "Authentification réussie !"))
-                st.rerun()
-            else:
-                st.error(data.get('message', "Impossible de s'authentifier."))
+        response = supabase.auth.sign_in(email=email, password=password)
+        user = response.user
+        if user:
+            return user
         else:
-            st.error(f"Erreur API (code HTTP: {resp.status_code}).")
+            st.error("Email ou mot de passe invalide.")
+            return None
     except Exception as e:
-        st.error(f"Erreur lors de la tentative de login: {e}")
+        st.error(f"Erreur lors de la connexion : {e}")
+        return None
+
+def get_user_creation_date(user):
+    """
+    Récupère la date de création du compte utilisateur.
+    Retourne un objet datetime en UTC.
+    """
+    try:
+        created_at_str = user.created_at  # Format : '2023-01-01T00:00:00.000Z'
+        created_at = datetime.strptime(created_at_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        created_at = created_at.replace(tzinfo=pytz.UTC)
+        return created_at
+    except Exception as e:
+        st.error(f"Erreur lors de la récupération de la date de création : {e}")
+        return None
+
+def check_subscription(user_id):
+    """
+    Vérifie dans la table "subscriptions" s'il existe une ligne pour user_id = userId
+    ET un status dans ['active', 'cancel_pending'].
+    Retourne les données de l'abonnement si trouvé, sinon False.
+    """
+    try:
+        response = supabase.table('subscriptions')\
+            .select('*')\
+            .eq('user_id', user_id)\
+            .in_('status', ['active', 'cancel_pending'])\
+            .single()\
+            .execute()
+        data = response.data
+        if data:
+            return data
+        else:
+            return False
+    except Exception as e:
+        st.error(f"Erreur lors de la vérification de l'abonnement : {e}")
+        return False
+
+def calculate_time_remaining(plan, updated_at):
+    """
+    Calcule le temps restant de l'abonnement en fonction du plan et de la date de mise à jour.
+    Retourne une chaîne de caractères indiquant le temps restant.
+    """
+    try:
+        # Parse the updated_at string to datetime
+        start_date = datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+        start_date = start_date.replace(tzinfo=pytz.UTC)
+
+        if plan == 'mensuel':
+            end_date = start_date + timedelta(days=30)
+        elif plan == 'trimestriel':
+            end_date = start_date + timedelta(days=90)
+        elif plan == 'annuel':
+            end_date = start_date + timedelta(days=365)
+        else:
+            end_date = start_date + timedelta(days=30)  # Default à 30 jours
+
+        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        diff = end_date - now
+
+        if diff <= timedelta(0):
+            return 'Votre abonnement est expiré.'
+        else:
+            days = diff.days
+            return f"Temps restant : {days} jour(s)"
+    except Exception as e:
+        st.error(f"Erreur lors du calcul du temps restant : {e}")
+        return "Erreur de calcul."
 
 # ===================== FORMULAIRE DE CONNEXION ===================
-if not st.session_state.authenticated:
-    st.markdown("<h2 class='title'>⚽ Connexion à l'application</h2>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Veuillez renseigner vos identifiants pour accéder aux prédictions.</p>", unsafe_allow_html=True)
+def login():
+    st.markdown("<h2>⚽ Connexion à l'application</h2>", unsafe_allow_html=True)
+    st.markdown("<p>Veuillez renseigner vos identifiants pour accéder aux prédictions.</p>", unsafe_allow_html=True)
 
     email = st.text_input("Email")
     password = st.text_input("Mot de passe", type="password")
 
     if st.button("Se connecter"):
         if email and password:
-            handle_login(email, password)
+            user = authenticate_user(email, password)
+            if user:
+                st.session_state.authenticated = True
+                st.session_state.user_id = user.id
+
+                # Vérifier la période d'essai
+                created_at = get_user_creation_date(user)
+                if created_at:
+                    now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+                    diff = now - created_at
+                    diff_days = diff.days
+
+                    if diff_days < 7:
+                        st.session_state.trial_days_remaining = 7 - diff_days
+                        st.success(f"Bienvenue! Vous êtes en période d'essai. Il vous reste {st.session_state.trial_days_remaining} jour(s).")
+                    else:
+                        # Vérifier l'abonnement
+                        subscription = check_subscription(user.id)
+                        if subscription:
+                            st.session_state.subscription = subscription
+                            time_remaining = calculate_time_remaining(subscription['plan'], subscription['updated_at'])
+                            st.success(f"Bienvenue! Votre abonnement **{subscription['plan']}** est actif.")
+                            st.session_state.time_remaining = time_remaining
+                        else:
+                            st.error("Votre période d'essai est expirée et vous n'avez pas d'abonnement actif.")
+                            st.session_state.authenticated = False
         else:
             st.error("Veuillez renseigner votre email et votre mot de passe.")
+
+# ===================== AUTHENTIFICATION ET GESTION DE SESSION ===========================
+# Initialiser les variables de session
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+if 'trial_days_remaining' not in st.session_state:
+    st.session_state.trial_days_remaining = 0
+if 'subscription' not in st.session_state:
+    st.session_state.subscription = None
+if 'time_remaining' not in st.session_state:
+    st.session_state.time_remaining = ""
+
+# ===================== MAIN APPLICATION ===========================
+if not st.session_state.authenticated:
+    login()
     st.stop()
+
+# ===================== INTERFACE UTILISATEUR ===========================
+st.title("Dashboard")
+
+# Afficher les informations de l'abonnement ou de la période d'essai
+if st.session_state.subscription:
+    plan = st.session_state.subscription.get('plan', 'Inconnu')
+    status = st.session_state.subscription.get('status', 'Inconnu')
+    updated_at = st.session_state.subscription.get('updated_at')
+
+    time_remaining = calculate_time_remaining(plan, updated_at)
+
+    st.markdown("### Votre Abonnement")
+    st.write(f"**Plan :** {plan}")
+    st.write(f"**Statut :** {status}")
+    st.write(time_remaining)
+elif st.session_state.trial_days_remaining > 0:
+    st.markdown("### Période d'Essai")
+    st.write(f"Temps restant dans votre période d'essai : {st.session_state.trial_days_remaining} jour(s).")
+else:
+    st.error("Votre période d'essai est expirée et vous n'avez pas d'abonnement actif.")
+    st.stop()
+
+# Afficher le lien vers Streamlit si en trial ou abonnement actif
+if st.session_state.subscription or st.session_state.trial_days_remaining > 0:
+    # Ici, vous pouvez ajouter un lien ou un bouton pour accéder à d'autres parties de l'application
+    # Comme l'application est déjà intégrée dans Streamlit, vous pouvez directement afficher le contenu
+    # ou rediriger vers une autre page si nécessaire.
+    
+    # Exemple de bouton de déconnexion :
+    if st.button("Se déconnecter"):
+        st.session_state.authenticated = False
+        st.session_state.user_id = None
+        st.session_state.subscription = None
+        st.session_state.trial_days_remaining = 0
+        st.session_state.time_remaining = ""
+        st.rerun()
+
+# ===================== CONTENU DE L'APPLICATION ===========================
+st.markdown("### Analyse des matchs")
+
+# Votre code existant pour l'analyse des matchs
+# ...
+
+# Exemple d'utilisation : Générer une analyse IA
+# home_team_name, away_team_name, home_prob, draw_prob, away_prob, home_form_score, away_form_score, home_h2h_score, away_h2h_score
+
+# Vous pouvez ajouter un formulaire ou une interface utilisateur pour entrer ces informations
+
 
 # ===================== PAGE PRINCIPALE ============================
 st.markdown("<h2 class='title'>Bienvenue dans l'application de Prédiction de Matchs</h2>", unsafe_allow_html=True)
