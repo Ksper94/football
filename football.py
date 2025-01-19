@@ -175,9 +175,8 @@ def calculate_time_remaining(plan, updated_at):
     Retourne une chaîne de caractères indiquant le temps restant.
     """
     try:
-        # Parse the updated_at string to datetime
-        start_date = datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%S.%fZ")
-        start_date = start_date.replace(tzinfo=pytz.UTC)
+        # Parse la date avec la partie offset (+00:00)
+        start_date = datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%S.%f%z")
 
         if plan == 'mensuel':
             end_date = start_date + timedelta(days=30)
@@ -186,7 +185,7 @@ def calculate_time_remaining(plan, updated_at):
         elif plan == 'annuel':
             end_date = start_date + timedelta(days=365)
         else:
-            end_date = start_date + timedelta(days=30)  # Default à 30 jours
+            end_date = start_date + timedelta(days=30)  # Valeur par défaut
 
         now = datetime.utcnow().replace(tzinfo=pytz.UTC)
         diff = end_date - now
